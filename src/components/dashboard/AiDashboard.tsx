@@ -81,8 +81,8 @@ export function AiDashboard() {
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => `${val / 1000}k`} />
                 <Tooltip 
-                  formatter={(value: number) => formatCurrency(value)}
-                  labelStyle={{ color: '#1e3a5f', fontWeight: 'bold', marginBottom: '8px' }}
+                  formatter={(value: any) => formatCurrency(Number(value || 0))}
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
                 />
                 <Area type="monotone" dataKey="actual" stroke="#10b981" strokeWidth={3} fill="none" />
                 <Area type="monotone" dataKey="forecast" stroke="#3b82f6" strokeWidth={3} strokeDasharray="5 5" fill="url(#colorForecast)" />

@@ -53,7 +53,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
           delete (cleanData as any).account
           delete (cleanData as any).offset_account
 
-          let opError = null
+          let opError: any = null
           switch (operation) {
             case 'create':
               console.log(`Syncing create to ${table}:`, cleanData)
@@ -77,9 +77,10 @@ export const useSyncStore = create<SyncState>((set, get) => ({
           }
 
           if (opError) {
-            console.error(`Supabase error for sync item ${id}:`, opError)
-            // 400, 406, 23505 (Conflict), 23503 (FK Violation) are usually permanent errors
-            if (['400', '406', '23505', '23503', 'P0001'].includes(opError.code) || opError.status === 400 || opError.status === 406) {
+            const status = (opError as any)?.status;
+            const code = String((opError as any)?.code || '');
+            
+            if (['400', '406', '23505', '23503', 'P0001'].includes(code) || status === 400 || status === 406) {
               console.warn(`Removing permanently failing sync item ${id} to unblock queue`)
               if (id) await removeSyncQueueItem(id)
             }

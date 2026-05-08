@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Scan, UploadCloud, X, CheckCircle, Loader2, FileText } from 'lucide-react'
+import { Scan, UploadCloud, X, CheckCircle, Loader2 } from 'lucide-react'
 
 interface OcrScannerProps {
   onScanComplete: (data: { amount: number; description: string; type: string }) => void

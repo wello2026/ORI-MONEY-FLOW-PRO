@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Repeat, Search, Filter, TrendingUp, TrendingDown, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useTransactionStore } from '@/stores/transactionStore'

@@ -8,7 +8,7 @@ interface BiometricAuthModalProps {
   amount?: number
 }
 
-export function BiometricAuthModal({ isOpen, onClose, onSuccess, amount }: BiometricAuthModalProps) {
+export function BiometricAuthModal({ isOpen, onClose, onSuccess }: BiometricAuthModalProps) {
   const [status, setStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle')
 
   useEffect(() => {

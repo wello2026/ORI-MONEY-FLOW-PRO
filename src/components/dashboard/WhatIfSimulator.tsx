@@ -122,7 +122,7 @@ export function WhatIfSimulator() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => `${val / 1000}k`} />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} />
               <Legend verticalAlign="top" height={36} />
               <Line 
                 type="monotone" 

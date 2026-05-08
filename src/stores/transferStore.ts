@@ -23,7 +23,7 @@ interface TransferState {
   clearMessages: () => void
 }
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+// Helper removed for unused warning
 
 export const useTransferStore = create<TransferState>((set, get) => ({
   transfers: [],
