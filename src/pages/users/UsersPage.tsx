@@ -209,52 +209,54 @@ export default function UsersPage() {
       ) : (
         <div className="space-y-3">
           {filteredUsers.map((user) => (
-            <div key={user.id} className="card-elevated p-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">
-                    {user.full_name.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold">{user.full_name}</p>
-                    {user.id === currentUser?.id && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">أنت</span>
-                    )}
+            <div key={user.id} className="card-elevated p-4">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="font-bold text-primary">
+                      {user.full_name.charAt(0)}
+                    </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold truncate">{user.full_name}</p>
+                      {user.id === currentUser?.id && (
+                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">أنت</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <span className={`px-3 py-1 rounded-full text-sm ${ROLE_COLORS[user.role]}`}>
+                
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${ROLE_COLORS[user.role]}`}>
                   {ROLE_LABELS[user.role]}
                 </span>
+              </div>
 
+              <div className="flex items-center justify-between border-t border-border pt-3">
                 <button
                   onClick={() => toggleUserStatus(user)}
-                  className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-medium transition-colors ${
                     user.is_active 
-                      ? 'bg-success/10 text-success' 
-                      : 'bg-error/10 text-error'
+                      ? 'bg-success/10 text-success hover:bg-success/20' 
+                      : 'bg-error/10 text-error hover:bg-error/20'
                   }`}
                 >
-                  {user.is_active ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                  {user.is_active ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                   {user.is_active ? 'نشط' : 'غير نشط'}
                 </button>
 
                 {canManageUsers && user.id !== currentUser?.id && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleOpenModal(user)}
-                      className="p-2 hover:bg-muted rounded-lg"
+                      className="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(user.id)}
-                      className="p-2 hover:bg-error/10 text-error rounded-lg"
+                      className="p-2 hover:bg-error/10 text-error rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
