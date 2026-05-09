@@ -155,11 +155,14 @@ export default function SettingsPage() {
         {/* Enable Audio Context Button for iOS */}
         <button 
           onClick={() => {
-            const BEEP = 'data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
-            const audio = new Audio(BEEP);
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.load();
             audio.play()
               .then(() => alert('تم تفعيل الصوت بنجاح! 🔊'))
-              .catch((err) => alert('فشل تفعيل الصوت: ' + err.message + '\nتأكد من عدم استخدام "الوضع الخاص" (Private Mode)'));
+              .catch((err) => {
+                console.error(err);
+                alert('خطأ في التشغيل: يرجى التأكد من أن الهاتف ليس في وضع الصامت (Silent Switch) والضغط مرة أخرى.');
+              });
           }}
           className="w-full card-elevated p-4 flex items-center justify-between gap-3 bg-primary/5 border-primary/20 hover:bg-primary/10 transition-all group"
         >
