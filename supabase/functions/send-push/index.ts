@@ -1,7 +1,7 @@
 // supabase/functions/send-push/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import * as webpush from "https://esm.sh/web-push@3.6.0"
+import * as webpush from "npm:web-push@3.6.7"
 
 const VAPID_PUBLIC_KEY = "BKJccS-o4FBHCZdizTp7pLx7bje1ATyH8HEmOz6IADkQwzOgVsp41m3AEjmoJSeW8zgFrvrFJkitNKyA5m_F0mc";
 const VAPID_PRIVATE_KEY = "sGjOMcwQkXOokXIfMOdT7NFDldAch9GQnnt5DOQiXnU";

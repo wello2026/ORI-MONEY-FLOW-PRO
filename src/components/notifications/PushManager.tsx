@@ -72,9 +72,18 @@ export function PushManager() {
       }
 
       setIsSubscribed(true)
-    } catch (err) {
+      alert('تم تفعيل إشعارات الخلفية بنجاح! ✅ ستصلك التنبيهات حتى والتطبيق مغلق.')
+    } catch (err: any) {
       console.error('Failed to subscribe:', err)
-      alert('فشل تفعيل الإشعارات. يرجى التأكد من أنك تستخدم التطبيق من الشاشة الرئيسية (PWA).')
+      let message = 'فشل تفعيل الإشعارات. '
+      if (!('serviceWorker' in navigator)) {
+        message += 'متصفحك لا يدعم هذه الميزة.'
+      } else if (Notification.permission === 'denied') {
+        message += 'يرجى السماح بالإشعارات من إعدادات الآيفون للتطبيق.'
+      } else {
+        message += 'تأكد من فتح التطبيق من الشاشة الرئيسية (PWA) وليس من المتصفح.'
+      }
+      alert(message)
     } finally {
       setLoading(false)
     }

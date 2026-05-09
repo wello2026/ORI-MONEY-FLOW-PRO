@@ -152,6 +152,27 @@ export default function SettingsPage() {
       )}
 
       <div className="space-y-4">
+        {/* Enable Audio Context Button for iOS */}
+        <button 
+          onClick={() => {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
+            audio.volume = 0
+            audio.play().then(() => alert('تم تفعيل الصوت بنجاح! 🔊')).catch(() => alert('يرجى لمس الشاشة لتفعيل الصوت'))
+          }}
+          className="w-full card-elevated p-4 flex items-center justify-between gap-3 bg-primary/5 border-primary/20 hover:bg-primary/10 transition-all group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Bell className="w-5 h-5" />
+            </div>
+            <div className="text-right">
+              <p className="font-bold text-sm">تفعيل جرس التنبيه</p>
+              <p className="text-xs text-muted-foreground">اضغط هنا لضمان سماع صوت الإشعارات</p>
+            </div>
+          </div>
+          <ChevronLeft className="w-5 h-5 text-primary rotate-180" />
+        </button>
+
         {/* New Push Section */}
         <div className="mb-4">
           <PushManager />
