@@ -4,6 +4,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { useAuthStore } from '@/stores/authStore'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 
 export default function ProjectsPage() {
   const { projects, isLoading, fetchProjects, createProject } = useProjectStore()

@@ -5,6 +5,7 @@ import { ArrowRight, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import { useAccountStore } from '@/stores/accountStore'
 import { ACCOUNT_TYPES, ACCOUNT_STATUS } from '@/lib/constants'
 import { useAuthStore } from '@/stores/authStore'
+import { supabase } from '@/lib/supabase'
 
 interface AccountFormData {
   code: string
