@@ -1,52 +1,20 @@
 import { useState, useEffect } from 'react'
-import { Users, Plus, Search, Edit, Trash2, Check, X, Loader2, Lock } from 'lucide-react'
+import { Plus, Search, User, Shield, Mail, Phone, Calendar, MoreVertical, Edit2, Trash2, Key } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { useAuthStore } from '@/stores/authStore'
-import { usePermissions } from '@/stores/permissionStore'
-import { AccessGuard } from '@/components/auth/AccessGuard'
-import type { User, UserRole } from '@/types'
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  super_admin: 'مدير عام',
-  admin: 'مدير',
-  employee: 'موظف',
-  viewer: 'مشاهد'
-}
-
-const ROLE_COLORS: Record<UserRole, string> = {
-  super_admin: 'bg-purple-100 text-purple-700',
-  admin: 'bg-blue-100 text-blue-700',
-  employee: 'bg-green-100 text-green-700',
-  viewer: 'bg-gray-100 text-gray-700'
-}
+import { ROLES } from '@/lib/constants'
 
 export default function UsersPage() {
-  const currentUser = useAuthStore((state) => state.user)
-  const { canManageUsers } = usePermissions()
-  const [users, setUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [users, setUsers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [showModal, setShowModal] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
-
-  // Form state
-  const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    role: 'employee' as UserRole,
-    phone: '',
-    is_active: true,
-    password: ''
-  })
 
   useEffect(() => {
     fetchUsers()
   }, [])
 
-  const fetchUsers = async () => {
-    setIsLoading(true)
+  async function fetchUsers() {
     try {
+      // In a real app, you'd fetch from a profiles table linked to auth.users
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -55,327 +23,114 @@ export default function UsersPage() {
       if (error) throw error
       setUsers(data || [])
     } catch (err) {
-      console.error('Failed to fetch users:', err)
-    }
-    setIsLoading(false)
-  }
-
-  const handleOpenModal = (user?: User) => {
-    if (user) {
-      setEditingUser(user)
-      setFormData({
-        full_name: user.full_name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone || '',
-        is_active: user.is_active,
-        password: ''
-      })
-    } else {
-      setEditingUser(null)
-      setFormData({
-        full_name: '',
-        email: '',
-        role: 'employee',
-        phone: '',
-        is_active: true,
-        password: ''
-      })
-    }
-    setShowModal(true)
-  }
-
-  const handleSave = async () => {
-    setIsSaving(true)
-    try {
-      if (editingUser) {
-        // Update existing user
-        const updates = {
-          full_name: formData.full_name,
-          role: formData.role,
-          phone: formData.phone || null,
-          is_active: formData.is_active
-        }
-
-        const { error } = await supabase
-          .from('profiles')
-          .update(updates)
-          .eq('id', editingUser.id)
-
-        if (error) throw error
-      } else {
-        // Create new user
-        const { error } = await supabase
-          .from('profiles')
-          .insert({
-            id: crypto.randomUUID(),
-            full_name: formData.full_name,
-            email: formData.email,
-            role: formData.role,
-            phone: formData.phone || null,
-            is_active: formData.is_active,
-            created_at: new Date().toISOString()
-          })
-
-        if (error) throw error
-      }
-
-      await fetchUsers()
-      setShowModal(false)
-    } catch (err: any) {
-      console.error('Failed to save user:', err)
-      alert('فشل في حفظ المستخدم: ' + err.message)
-    }
-    setIsSaving(false)
-  }
-
-  const handleDelete = async (userId: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) return
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId)
-
-      if (error) throw error
-      await fetchUsers()
-    } catch (err) {
-      console.error('Failed to delete user:', err)
-      alert('فشل في حذف المستخدم')
+      console.error('Error fetching users:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const toggleUserStatus = async (user: User) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: !user.is_active })
-        .eq('id', user.id)
-
-      if (error) throw error
-      await fetchUsers()
-    } catch (err) {
-      console.error('Failed to toggle user status:', err)
-    }
-  }
-
-  const filteredUsers = users.filter(user =>
-    user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(u => 
+    u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
-    <AccessGuard permission="users_view" fallback={
-      <div className="page-container flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <Lock className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h2 className="text-xl font-semibold text-muted-foreground">لا تملك صلاحية الوصول</h2>
-          <p className="text-sm text-muted-foreground mt-2">يرجى التواصل مع المدير للحصول على الصلاحية</p>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-foreground">إدارة المستخدمين</h1>
+          <p className="text-muted-foreground text-sm">إضافة المهندسين وتحديد الصلاحيات</p>
         </div>
+        <button 
+          onClick={() => alert('قريباً: إضافة مستخدم جديد عبر Edge Function')}
+          className="btn-primary flex items-center justify-center gap-2 px-6 py-3 rounded-2xl shadow-gold"
+        >
+          <Plus className="w-5 h-5" />
+          <span>إضافة مستخدم</span>
+        </button>
       </div>
-    }>
-      <div className="page-container">
-        <div className="page-header flex items-center justify-between">
-          <div>
-            <h1 className="page-title">إدارة المستخدمين</h1>
-            <p className="page-subtitle">إضافة وتعديل وحذف المستخدمين</p>
-          </div>
-          {canManageUsers && (
-            <button onClick={() => handleOpenModal()} className="btn-primary flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              مستخدم جديد
-            </button>
-          )}
-        </div>
 
-      {/* Search */}
-      <div className="mb-4 relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+      <div className="relative group">
+        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <input
           type="text"
-          placeholder="بحث..."
+          placeholder="ابحث عن مهندس بالاسم أو الإيميل..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="input-field pr-10"
+          className="w-full bg-card border-2 border-border focus:border-primary rounded-2xl py-4 pr-12 pl-4 outline-none transition-all shadow-sm"
         />
       </div>
 
-      {/* Users List */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground">جاري تحميل البيانات...</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredUsers.map((user) => (
-            <div key={user.id} className="card-elevated p-4">
-              <div className="flex items-center justify-between gap-2 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="font-bold text-primary">
-                      {user.full_name.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold truncate">{user.full_name}</p>
-                      {user.id === currentUser?.id && (
-                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">أنت</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredUsers.map((u) => (
+            <div 
+              key={u.id}
+              className="glass-card p-6 hover:scale-[1.02] transition-all duration-300 relative group overflow-hidden"
+            >
+              {/* Background Accent */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all duration-500" />
+              
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center text-primary shadow-inner border border-white/10 relative overflow-hidden">
+                  {u.avatar_url ? (
+                    <img src={u.avatar_url} alt={u.full_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-8 h-8" />
+                  )}
+                  <div className="absolute bottom-0 right-0 w-4 h-4 bg-success border-2 border-card rounded-full" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-foreground">{u.full_name || 'مستخدم جديد'}</h3>
+                  <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                    <Shield className="w-3.5 h-3.5 text-primary" />
+                    <span>{ROLES.find(r => r.value === u.role)?.label || 'موظف'}</span>
                   </div>
                 </div>
-                
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${ROLE_COLORS[user.role]}`}>
-                  {ROLE_LABELS[user.role]}
-                </span>
               </div>
 
-              <div className="flex items-center justify-between border-t border-border pt-3">
-                <button
-                  onClick={() => toggleUserStatus(user)}
-                  className={`px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-medium transition-colors ${
-                    user.is_active 
-                      ? 'bg-success/10 text-success hover:bg-success/20' 
-                      : 'bg-error/10 text-error hover:bg-error/20'
-                  }`}
-                >
-                  {user.is_active ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
-                  {user.is_active ? 'نشط' : 'غير نشط'}
-                </button>
-
-                {canManageUsers && user.id !== currentUser?.id && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleOpenModal(user)}
-                      className="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(user.id)}
-                      className="p-2 hover:bg-error/10 text-error rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                    <Mail className="w-4 h-4" />
                   </div>
-                )}
+                  <span className="truncate">{u.email}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <span>{u.phone || 'غير مسجل'}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <span>انضم {new Date(u.created_at).toLocaleDateString('ar-LY')}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-4 border-t border-border/50">
+                <button className="flex-1 btn-secondary py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-primary/10 hover:text-primary transition-all">
+                  <Edit2 className="w-3.5 h-3.5" />
+                  تعديل
+                </button>
+                <button className="btn-secondary p-2.5 rounded-xl hover:text-error transition-all">
+                  <Key className="w-4 h-4" />
+                </button>
+                <button className="btn-secondary p-2.5 rounded-xl hover:text-error transition-all">
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ))}
-
-          {filteredUsers.length === 0 && (
-            <div className="empty-state">
-              <Users className="w-16 h-16 opacity-30" />
-              <h3>لا توجد مستخدمين</h3>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="card-elevated w-full max-w-md p-6 m-4">
-            <h2 className="text-xl font-bold mb-4">
-              {editingUser ? 'تعديل مستخدم' : 'مستخدم جديد'}
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">الاسم</label>
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="input-field"
-                  placeholder="الاسم الكامل"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="input-field"
-                  placeholder="email@example.com"
-                  disabled={!!editingUser}
-                />
-              </div>
-
-              {!editingUser && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">كلمة المرور</label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="input-field"
-                    placeholder="كلمة المرور"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium mb-2">الدور</label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                  className="input-field"
-                >
-                  <option value="super_admin">مدير عام</option>
-                  <option value="admin">مدير</option>
-                  <option value="employee">موظف</option>
-                  <option value="viewer">مشاهد</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">رقم الهاتف</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="input-field"
-                  placeholder="رقم الهاتف"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="is_active">مستخدم نشط</label>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 btn-secondary"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving || !formData.full_name || (!editingUser && !formData.password)}
-                className="flex-1 btn-primary"
-              >
-                {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'حفظ'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>
-    </AccessGuard>
   )
 }

@@ -26,6 +26,7 @@ const NotificationsPage = lazy(() => import('@/pages/notifications/Notifications
 const SystemTestPage = lazy(() => import('@/pages/test/SystemTestPage'))
 const UsersPage = lazy(() => import('@/pages/users/UsersPage'))
 const RolesPage = lazy(() => import('@/pages/users/RolesPage'))
+const ProjectsPage = lazy(() => import('@/pages/projects/ProjectsPage'))
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import AppLayout from '@/components/layout/AppLayout'
@@ -255,6 +256,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <RolesPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.PROJECTS,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ProjectsPage />
           </Suspense>
         )
       },

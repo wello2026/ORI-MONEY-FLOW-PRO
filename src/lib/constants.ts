@@ -91,6 +91,7 @@ export const ROUTES = {
   AUDIT: '/audit',
   USERS: '/users',
   ROLES: '/roles',
+  PROJECTS: '/projects',
   TEST: '/test',
   SETTINGS: '/settings',
   NOTIFICATIONS: '/notifications'
@@ -98,15 +99,14 @@ export const ROUTES = {
 
 export const NAV_ITEMS = [
   { path: ROUTES.DASHBOARD, label: 'الرئيسية', icon: 'home' },
+  { path: ROUTES.PROJECTS, label: 'المشاريع', icon: 'building' },
   { path: ROUTES.ACCOUNTS, label: 'الحسابات', icon: 'wallet' },
   { path: ROUTES.TRANSACTIONS, label: 'المعاملات', icon: 'repeat' },
   { path: ROUTES.TRANSFERS, label: 'التحويلات', icon: 'shuffle' },
   { path: ROUTES.APPROVALS, label: 'الموافقات', icon: 'check-circle' },
   { path: ROUTES.USERS, label: 'المستخدمين', icon: 'users' },
-  { path: ROUTES.ROLES, label: 'الأدوار', icon: 'shield' },
   { path: ROUTES.SETTINGS, label: 'الإعدادات', icon: 'settings' },
-  { path: ROUTES.REPORTS, label: 'التقارير', icon: 'file-text' },
-  { path: ROUTES.AUDIT, label: 'السجل', icon: 'history' }
+  { path: ROUTES.REPORTS, label: 'التقارير', icon: 'file-text' }
 ] as const
 
 export const INITIAL_SYNC_DELAY = 2000

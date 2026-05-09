@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Wallet, Repeat, Shuffle, CheckCircle, Users, Shield, Settings, FileText, History } from 'lucide-react'
+import { Home, Wallet, Repeat, Shuffle, CheckCircle, Users, Shield, Settings, FileText, History, Building } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROUTES, NAV_ITEMS } from '@/lib/constants'
 import { useNotificationStore } from '@/stores/notificationStore'
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   home: Home,
+  building: Building,
   wallet: Wallet,
   repeat: Repeat,
   shuffle: Shuffle,
