@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNotificationStore } from '@/stores/notificationStore'
-import { Bell, X, CheckCircle, AlertCircle, Info } from 'lucide-react'
+import { Bell, X, CheckCircle, AlertCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 // صوت تنبيه (Ping) واضح وقصير
