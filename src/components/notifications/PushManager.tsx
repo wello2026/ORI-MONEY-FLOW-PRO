@@ -8,7 +8,7 @@ export function PushManager() {
   const user = useAuthStore((state) => state.user)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [permission, setPermission] = useState<NotificationPermission>('default')
+  const [_permission, setPermission] = useState<NotificationPermission>('default')
 
   useEffect(() => {
     if ('Notification' in window) {
