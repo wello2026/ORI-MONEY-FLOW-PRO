@@ -60,7 +60,20 @@ export function PushManager() {
       }
       
       const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-      await navigator.serviceWorker.ready;
+      
+      // Wait for the service worker to be active
+      let serviceWorker = registration.installing || registration.waiting || registration.active;
+      if (serviceWorker) {
+        if (serviceWorker.state === 'activated') {
+          // Already active
+        } else {
+          await new Promise<void>((resolve) => {
+            serviceWorker?.addEventListener('statechange', (e: any) => {
+              if (e.target.state === 'activated') resolve();
+            });
+          });
+        }
+      }
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
