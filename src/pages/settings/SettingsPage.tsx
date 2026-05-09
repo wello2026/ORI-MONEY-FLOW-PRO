@@ -5,6 +5,7 @@ import { useThemeStore, useDarkMode } from '@/stores/themeStore'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { User, Moon, Sun, Bell, Shield, LogOut, ChevronLeft, Save, Camera, Play, Activity } from 'lucide-react'
 import { ROUTES } from '@/lib/constants'
+import { PushManager } from '@/components/notifications/PushManager'
 
 interface SettingsItem {
   icon: React.ComponentType<{ className?: string }>
@@ -151,6 +152,11 @@ export default function SettingsPage() {
       )}
 
       <div className="space-y-4">
+        {/* New Push Section */}
+        <div className="mb-4">
+          <PushManager />
+        </div>
+
         {settingsSections.map((section, sectionIndex) => (
           <div key={sectionIndex} className="card-elevated overflow-hidden">
             <div className="p-3 bg-muted/30 border-b">

@@ -2,6 +2,7 @@ export const APP_NAME = import.meta.env.VITE_APP_NAME || 'ORI Finance Pro'
 
 export const DEFAULT_CURRENCY = 'LYD'
 export const DEFAULT_CURRENCY_SYMBOL = 'د.ل'
+export const VAPID_PUBLIC_KEY = 'BKJccS-o4FBHCZdizTp7pLx7bje1ATyH8HEmOz6IADkQwzOgVsp41m3AEjmoJSeW8zgFrvrFJkitNKyA5m_F0mc'
 
 export const ACCOUNT_TYPES = [
   { value: 'cashbox', label: 'صندوق', icon: 'wallet' },

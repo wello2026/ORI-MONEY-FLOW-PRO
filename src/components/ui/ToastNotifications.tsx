@@ -12,11 +12,39 @@ export function ToastNotifications() {
   const navigate = useNavigate()
   const shownNotificationIds = useRef<Set<string>>(new Set())
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const isAudioUnlocked = useRef(false)
 
-  // تهيئة الصوت مسبقاً لتجاوز قيود iOS
+  // تهيئة الصوت مسبقاً
   useEffect(() => {
     audioRef.current = new Audio(NOTIFICATION_SOUND)
     audioRef.current.load()
+
+    // وظيفة لفك حظر الصوت في iOS
+    const unlockAudio = () => {
+      if (audioRef.current && !isAudioUnlocked.current) {
+        audioRef.current.play()
+          .then(() => {
+            audioRef.current?.pause()
+            if (audioRef.current) audioRef.current.currentTime = 0
+            isAudioUnlocked.current = true
+            console.log('Audio unlocked for iOS')
+            // إزالة المستمعين بعد النجاح
+            window.removeEventListener('click', unlockAudio)
+            window.removeEventListener('touchstart', unlockAudio)
+          })
+          .catch(() => {
+            // تجاهل الخطأ إذا لم تنجح المحاولة الأولى
+          })
+      }
+    }
+
+    window.addEventListener('click', unlockAudio)
+    window.addEventListener('touchstart', unlockAudio)
+
+    return () => {
+      window.removeEventListener('click', unlockAudio)
+      window.removeEventListener('touchstart', unlockAudio)
+    }
   }, [])
 
   const playNotificationSound = useCallback(() => {
@@ -35,9 +63,6 @@ export function ToastNotifications() {
   useEffect(() => {
     if (notifications.length > 0) {
       const latest = notifications[0]
-      
-      // التحقق مما إذا كان الإشعار جديداً ولم يتم عرضه مسبقاً
-      // سنعتبر الإشعار جديداً إذا وصل في آخر 30 ثانية ولم يتم عرضه في هذه الجلسة
       const now = new Date().getTime()
       const created = new Date(latest.created_at).getTime()
       const isRecentlyCreated = now - created < 30000 
@@ -48,7 +73,6 @@ export function ToastNotifications() {
         playNotificationSound()
         triggerVibration()
         
-        // إخفاء التنبيه تلقائياً بعد 8 ثواني
         setTimeout(() => {
           setActiveToasts(prev => prev.filter(t => t.id !== latest.id))
         }, 8000)
