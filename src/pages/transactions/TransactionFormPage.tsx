@@ -121,7 +121,7 @@ export default function TransactionFormPage() {
     const transactionData = {
       ...data,
       attachments: attachments,
-      status: 'pending'
+      status: 'pending' as any
     }
 
     if (isEdit && id) {

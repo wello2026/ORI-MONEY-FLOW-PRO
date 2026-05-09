@@ -85,9 +85,12 @@ export interface Transfer {
 export interface Project {
   id: string
   name: string
-  location?: string
-  status: 'active' | 'completed' | 'on_hold'
+  code: string
+  status: 'active' | 'completed' | 'on_hold' | 'archived'
   budget: number
+  currency: string
+  description?: string
+  created_by: string
   created_at: string
   updated_at: string
 }
@@ -169,6 +172,7 @@ export interface TransactionFilter {
   type?: TransactionType | 'all'
   status?: TransactionStatus | 'all'
   account_id?: string
+  project_id?: string
   date_from?: string
   date_to?: string
   page?: number

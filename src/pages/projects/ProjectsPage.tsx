@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Building, MapPin, Clock, X, DollarSign, Loader2 } from 'lucide-react'
+import { Plus, Search, Building, Clock, X, DollarSign, Loader2 } from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { useAuthStore } from '@/stores/authStore'
 import { formatCurrency } from '@/lib/format'
@@ -33,7 +33,11 @@ export default function ProjectsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const result = await createProject(formData)
+    const result = await createProject({
+      ...formData,
+      status: 'active',
+      created_by: user?.id || ''
+    })
     if (result.success) {
       setIsModalOpen(false)
       setFormData({ name: '', code: '', budget: 0, currency: 'LYD', description: '' })

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { ArrowRight, Save, AlertCircle, CheckCircle, ChevronDown } from 'lucide-react'
+import { ArrowRight, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import { useAccountStore } from '@/stores/accountStore'
 import { ACCOUNT_TYPES, ACCOUNT_STATUS } from '@/lib/constants'
 import { useAuthStore } from '@/stores/authStore'

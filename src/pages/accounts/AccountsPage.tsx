@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Wallet, Search, Filter, AlertCircle, RefreshCw, Loader2, ChevronRight, ChevronDown, Building2, User } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Search, AlertCircle, Loader2, ChevronRight, ChevronDown, Building2, User } from 'lucide-react'
 import { useAccountStore } from '@/stores/accountStore'
 import { ROUTES } from '@/lib/constants'
 import { formatCurrency, formatAccountType } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { Account } from '@/types'
+import type { Account } from '@/types'
 
 export default function AccountsPage() {
   const accounts = useAccountStore((state) => state.accounts)

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { FileText, Download, TrendingUp, Wallet, Calendar, ArrowRight, Building2, User, ChevronLeft, Printer, Share2 } from 'lucide-react'
+import { FileText, TrendingUp, Wallet, Building2, User, ChevronLeft } from 'lucide-react'
 import { useTransactionStore } from '@/stores/transactionStore'
 import { useAccountStore } from '@/stores/accountStore'
 import { useTransferStore } from '@/stores/transferStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { exportTransactionsToCSV, exportAccountsToCSV, exportTransfersToCSV, printReport, generateDailyReport } from '@/lib/export'
+
 import { cn } from '@/lib/utils'
 
 type ReportType = 'daily' | 'accounts' | 'cashflow' | 'transactions' | 'transfers' | 'trial_balance' | 'projects'
@@ -192,7 +192,7 @@ function ReportButton({ title, desc, icon, color, onClick }: any) {
 }
 
 function renderReport(type: ReportType, data: any) {
-  const { filteredTransactions, accounts, transfers, projects } = data
+  const { filteredTransactions, accounts, projects } = data
 
   switch (type) {
     case 'daily':

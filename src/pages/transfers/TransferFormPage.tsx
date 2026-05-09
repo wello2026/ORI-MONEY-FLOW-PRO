@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { ArrowRight, Shuffle, AlertCircle, CheckCircle, ArrowDown } from 'lucide-react'
+import { ArrowRight, Shuffle, AlertCircle, CheckCircle } from 'lucide-react'
 import { useAccountStore } from '@/stores/accountStore'
 import { useTransferStore } from '@/stores/transferStore'
 import { formatCurrency } from '@/lib/format'
@@ -52,7 +52,7 @@ export default function TransferFormPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { isSubmitting },
     watch,
     setValue
   } = useForm<TransferFormData>({

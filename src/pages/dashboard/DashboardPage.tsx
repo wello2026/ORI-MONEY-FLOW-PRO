@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TrendingUp, TrendingDown, Wallet, RefreshCw, Brain, LayoutDashboard, Building, Users, ArrowUpRight, ArrowDownRight, Coins } from 'lucide-react'
+import { TrendingUp, Wallet, RefreshCw, Brain, LayoutDashboard, Building, Users, ArrowUpRight, ArrowDownRight, Coins } from 'lucide-react'
 import { useAccountStore } from '@/stores/accountStore'
 import { useTransactionStore } from '@/stores/transactionStore'
 import { ROUTES } from '@/lib/constants'
