@@ -2,6 +2,11 @@
 
 declare const self: ServiceWorkerGlobalScope;
 
+// This is required for workbox to inject the manifest
+// @ts-ignore
+const manifest = self.__WB_MANIFEST;
+console.log('SW Manifest:', manifest);
+
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
