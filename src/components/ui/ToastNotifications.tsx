@@ -3,54 +3,70 @@ import { useNotificationStore } from '@/stores/notificationStore'
 import { Bell, X, CheckCircle, AlertCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-// صوت تنبيه (Ping) واضح وقصير
-const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
-
 export function ToastNotifications() {
   const [activeToasts, setActiveToasts] = useState<any[]>([])
   const notifications = useNotificationStore((state) => state.notifications)
   const navigate = useNavigate()
   const shownNotificationIds = useRef<Set<string>>(new Set())
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const isAudioUnlocked = useRef(false)
+  const audioContextRef = useRef<AudioContext | null>(null)
 
-  // تهيئة الصوت مسبقاً
+  // تهيئة نظام الصوت عند أول لمسة للتطبيق
   useEffect(() => {
-    audioRef.current = new Audio(NOTIFICATION_SOUND)
-    audioRef.current.load()
-
-    // وظيفة لفك حظر الصوت في iOS
-    const unlockAudio = () => {
-      if (audioRef.current && !isAudioUnlocked.current) {
-        audioRef.current.play()
-          .then(() => {
-            audioRef.current?.pause()
-            if (audioRef.current) audioRef.current.currentTime = 0
-            isAudioUnlocked.current = true
-            console.log('Audio unlocked for iOS')
-            // إزالة المستمعين بعد النجاح
-            window.removeEventListener('click', unlockAudio)
-            window.removeEventListener('touchstart', unlockAudio)
-          })
-          .catch(() => {
-            // تجاهل الخطأ إذا لم تنجح المحاولة الأولى
-          })
+    const initAudio = () => {
+      if (!audioContextRef.current) {
+        try {
+          const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+          audioContextRef.current = new AudioContext();
+          
+          // تشغيل صوت صامت لفك الحظر
+          const oscillator = audioContextRef.current.createOscillator();
+          const gainNode = audioContextRef.current.createGain();
+          gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContextRef.current.destination);
+          oscillator.start();
+          oscillator.stop(audioContextRef.current.currentTime + 0.1);
+          
+          console.log('AudioContext initialized for iOS');
+          window.removeEventListener('click', initAudio);
+          window.removeEventListener('touchstart', initAudio);
+        } catch (e) {
+          console.error('Failed to init AudioContext:', e);
+        }
       }
-    }
+    };
 
-    window.addEventListener('click', unlockAudio)
-    window.addEventListener('touchstart', unlockAudio)
-
+    window.addEventListener('click', initAudio);
+    window.addEventListener('touchstart', initAudio);
     return () => {
-      window.removeEventListener('click', unlockAudio)
-      window.removeEventListener('touchstart', unlockAudio)
-    }
+      window.removeEventListener('click', initAudio);
+      window.removeEventListener('touchstart', initAudio);
+    };
   }, [])
 
   const playNotificationSound = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0
-      audioRef.current.play().catch(e => console.log('Audio play failed:', e))
+    if (audioContextRef.current) {
+      try {
+        const ctx = audioContextRef.current;
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+        
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.2);
+      } catch (err) {
+        console.error('Failed to play synthetic sound:', err);
+      }
     }
   }, [])
 
@@ -65,7 +81,7 @@ export function ToastNotifications() {
       const latest = notifications[0]
       const now = new Date().getTime()
       const created = new Date(latest.created_at).getTime()
-      const isRecentlyCreated = now - created < 30000 
+      const isRecentlyCreated = Math.abs(now - created) < 30000 
       
       if (isRecentlyCreated && !latest.is_read && !shownNotificationIds.current.has(latest.id)) {
         shownNotificationIds.current.add(latest.id)

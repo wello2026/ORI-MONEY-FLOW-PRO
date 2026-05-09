@@ -42,14 +42,26 @@ export function PushManager() {
   const subscribeUser = async () => {
     setLoading(true)
     try {
+      if (!('serviceWorker' in navigator)) {
+        throw new Error('Service Workers are not supported');
+      }
+
       const permission = await Notification.requestPermission()
       setPermission(permission)
       
       if (permission !== 'granted') {
-        throw new Error('Permission not granted')
+        throw new Error('Notification permission denied');
       }
 
-      const registration = await navigator.serviceWorker.ready
+      // Force unregister and re-register to ensure latest SW
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for(let reg of registrations) {
+        await reg.unregister();
+      }
+      
+      const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      await navigator.serviceWorker.ready;
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
@@ -72,18 +84,10 @@ export function PushManager() {
       }
 
       setIsSubscribed(true)
-      alert('تم تفعيل إشعارات الخلفية بنجاح! ✅ ستصلك التنبيهات حتى والتطبيق مغلق.')
+      alert('تم تفعيل إشعارات الخلفية بنجاح! ✅')
     } catch (err: any) {
-      console.error('Failed to subscribe:', err)
-      let message = 'فشل تفعيل الإشعارات. '
-      if (!('serviceWorker' in navigator)) {
-        message += 'متصفحك لا يدعم هذه الميزة.'
-      } else if (Notification.permission === 'denied') {
-        message += 'يرجى السماح بالإشعارات من إعدادات الآيفون للتطبيق.'
-      } else {
-        message += 'تأكد من فتح التطبيق من الشاشة الرئيسية (PWA) وليس من المتصفح.'
-      }
-      alert(message)
+      console.error('Push error:', err)
+      alert(`عذراً، فشل التفعيل: ${err.message}\n\nتأكد من فتح التطبيق من الشاشة الرئيسية (PWA).`)
     } finally {
       setLoading(false)
     }
