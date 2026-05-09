@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, User, Shield, Mail, Phone, Calendar, MoreVertical, Edit2, Trash2, Key } from 'lucide-react'
+import { Plus, Search, User, Shield, Mail, Phone, Calendar, Edit2, Trash2, Key } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ROLES } from '@/lib/constants'
 

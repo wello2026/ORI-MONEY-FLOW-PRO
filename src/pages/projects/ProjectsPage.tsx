@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Building, MapPin, CheckCircle2, Clock } from 'lucide-react'
+import { Plus, Search, Building, MapPin, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { ROUTES } from '@/lib/constants'
-import { useNavigate } from 'react-router-dom'
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const navigate = useNavigate()
 
   useEffect(() => {
     fetchProjects()
