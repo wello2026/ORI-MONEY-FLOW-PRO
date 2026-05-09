@@ -327,8 +327,3 @@ export default function TransactionFormPage() {
     </div>
   )
 }
-        </div>
-      )}
-    </div>
-  )
-}

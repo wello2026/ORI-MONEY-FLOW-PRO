@@ -200,6 +200,3 @@ function AccountRow({ account, level, expandedIds, toggleExpand }: any) {
     </div>
   )
 }
-    </div>
-  )
-}

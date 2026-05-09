@@ -311,25 +311,3 @@ function renderReport(type: ReportType, data: any) {
       return <div className="p-20 text-center font-black opacity-20 text-4xl">قيد التطوير...</div>
   }
 }
-s-center justify-center mb-3">
-              <Wallet className="w-6 h-6 text-success" />
-            </div>
-            <h3 className="font-semibold mb-1">دفتر الأستاذ</h3>
-            <p className="text-sm text-muted-foreground">حركات الحسابات</p>
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <button 
-            onClick={() => setSelectedReport(null)}
-            className="flex items-center gap-2 text-primary hover:underline mb-4"
-          >
-            <ArrowRight className="w-4 h-4" />
-            العودة للقائمة
-          </button>
-          {renderReportContent()}
-        </div>
-      )}
-    </div>
-  )
-}

@@ -273,6 +273,3 @@ export default function AccountFormPage() {
     </div>
   )
 }
-    </div>
-  )
-}

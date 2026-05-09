@@ -247,11 +247,3 @@ function KpiCard({ title, value, unit, trend, icon, color }: any) {
     </div>
   )
 }
-1">{title}</p>
-      <h3 className="text-2xl font-black text-foreground">
-        {typeof value === 'number' ? value.toLocaleString() : value} 
-        <span className="text-xs font-normal text-muted-foreground mr-1">{unit}</span>
-      </h3>
-    </div>
-  )
-}

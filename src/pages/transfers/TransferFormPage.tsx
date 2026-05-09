@@ -276,6 +276,3 @@ export default function TransferFormPage() {
     </div>
   )
 }
-    </div>
-  )
-}
