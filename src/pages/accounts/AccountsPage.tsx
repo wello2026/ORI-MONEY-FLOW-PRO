@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, AlertCircle, Loader2, ChevronRight, ChevronDown, Building2, User } from 'lucide-react'
+import { Plus, Wallet, Search, AlertCircle, Loader2, ChevronRight, ChevronDown, Building2, User } from 'lucide-react'
 import { useAccountStore } from '@/stores/accountStore'
 import { ROUTES } from '@/lib/constants'
 import { formatCurrency, formatAccountType } from '@/lib/format'

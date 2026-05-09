@@ -52,7 +52,7 @@ export default function TransferFormPage() {
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { },
     watch,
     setValue
   } = useForm<TransferFormData>({
