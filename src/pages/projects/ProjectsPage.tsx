@@ -10,6 +10,7 @@ export default function ProjectsPage() {
   const user = useAuthStore((state) => state.user)
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [profiles, setProfiles] = useState<any[]>([])
   
   // Form State
   const [formData, setFormData] = useState({
@@ -17,12 +18,19 @@ export default function ProjectsPage() {
     code: '',
     budget: 0,
     currency: 'LYD',
-    description: ''
+    description: '',
+    manager_id: ''
   })
 
   useEffect(() => {
     fetchProjects()
+    fetchProfiles()
   }, [fetchProjects])
+
+  async function fetchProfiles() {
+    const { data } = await supabase.from('profiles').select('id, full_name').order('full_name')
+    if (data) setProfiles(data)
+  }
 
   const isAdmin = user?.role === 'super_admin' || user?.role === 'admin'
 
@@ -40,7 +48,7 @@ export default function ProjectsPage() {
     })
     if (result.success) {
       setIsModalOpen(false)
-      setFormData({ name: '', code: '', budget: 0, currency: 'LYD', description: '' })
+      setFormData({ name: '', code: '', budget: 0, currency: 'LYD', description: '', manager_id: '' })
     }
   }
 
@@ -214,6 +222,20 @@ export default function ProjectsPage() {
                       <option value="USD">دولار أمريكي (USD)</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-muted-foreground mr-2">المهندس المسؤول (Manager)</label>
+                  <select 
+                    value={formData.manager_id}
+                    onChange={e => setFormData({...formData, manager_id: e.target.value})}
+                    className="w-full bg-muted/30 border-2 border-border focus:border-primary rounded-2xl py-4 px-6 outline-none font-bold appearance-none"
+                  >
+                    <option value="">-- اختر المهندس --</option>
+                    {profiles.map(p => (
+                      <option key={p.id} value={p.id}>{p.full_name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-2">

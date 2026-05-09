@@ -13,6 +13,7 @@ interface AccountFormData {
   balance: number
   currency: string
   parent_id?: string
+  owner_id?: string // Link to profile
   status: 'active' | 'inactive' | 'archived'
   notes?: string
 }
@@ -35,6 +36,7 @@ export default function AccountFormPage() {
   
   const [localError, setLocalError] = useState<string | null>(null)
   const [localSuccess, setLocalSuccess] = useState<string | null>(null)
+  const [profiles, setProfiles] = useState<any[]>([])
 
   const {
     register,
@@ -55,10 +57,16 @@ export default function AccountFormPage() {
 
   useEffect(() => {
     fetchAccounts()
+    fetchProfiles()
     if (id) {
       fetchAccount(id)
     }
   }, [id, fetchAccount, fetchAccounts])
+
+  async function fetchProfiles() {
+    const { data } = await supabase.from('profiles').select('id, full_name').order('full_name')
+    if (data) setProfiles(data)
+  }
 
   useEffect(() => {
     if (currentAccount && isEdit) {
@@ -69,6 +77,7 @@ export default function AccountFormPage() {
         balance: currentAccount.balance,
         currency: currentAccount.currency,
         parent_id: currentAccount.parent_id || '',
+        owner_id: currentAccount.owner_id || '',
         status: currentAccount.status,
         notes: currentAccount.notes || ''
       })
@@ -100,6 +109,7 @@ export default function AccountFormPage() {
       balance: data.balance || 0,
       currency: data.currency || 'LYD',
       parent_id: data.parent_id || null,
+      owner_id: data.owner_id || null,
       created_by: user?.id || ''
     }
 
@@ -198,6 +208,16 @@ export default function AccountFormPage() {
                   <option key={type.value} value={type.value}>
                     {type.label}
                   </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold mb-2 text-muted-foreground">صاحب العُهدة / المسؤول (Owner)</label>
+              <select {...register('owner_id')} className="input-field">
+                <option value="">-- اختر المسؤول --</option>
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.full_name}</option>
                 ))}
               </select>
             </div>

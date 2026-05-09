@@ -90,6 +90,7 @@ export interface Project {
   budget: number
   currency: string
   description?: string
+  manager_id?: string // The engineer responsible for this project
   created_by: string
   created_at: string
   updated_at: string
