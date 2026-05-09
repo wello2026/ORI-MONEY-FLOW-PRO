@@ -155,13 +155,14 @@ export default function SettingsPage() {
         {/* Enable Audio Context Button for iOS */}
         <button 
           onClick={() => {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.load();
+            // صوت تنبيه احترافي قصير جداً
+            const BEEP = 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFhYAAAAbm90aWZpY2F0aW9uAFUAbAB0AHIAYQAgAE0AbwBkAGUAcgBuACAAUABpAG4AZwAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6AAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAADwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+            const audio = new Audio(BEEP);
             audio.play()
               .then(() => alert('تم تفعيل الصوت بنجاح! 🔊'))
               .catch((err) => {
                 console.error(err);
-                alert('خطأ في التشغيل: يرجى التأكد من أن الهاتف ليس في وضع الصامت (Silent Switch) والضغط مرة أخرى.');
+                alert('خطأ تقني: ' + err.message);
               });
           }}
           className="w-full card-elevated p-4 flex items-center justify-between gap-3 bg-primary/5 border-primary/20 hover:bg-primary/10 transition-all group"
