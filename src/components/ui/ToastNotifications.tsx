@@ -1,53 +1,60 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { Bell, X, CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-// صوت تنبيه قصير (Base64)
-const NOTIFICATION_SOUND = 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFhYAAAAbm90aWZpY2F0aW9uAFUAbAB0AHIAYQAgAE0AbwBkAGUAcgBuACAAUABpAG4AZwAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6AAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAADwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+// صوت تنبيه (Ping) واضح وقصير
+const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
 
 export function ToastNotifications() {
   const [activeToasts, setActiveToasts] = useState<any[]>([])
   const notifications = useNotificationStore((state) => state.notifications)
   const navigate = useNavigate()
+  const shownNotificationIds = useRef<Set<string>>(new Set())
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // تهيئة الصوت مسبقاً لتجاوز قيود iOS
+  useEffect(() => {
+    audioRef.current = new Audio(NOTIFICATION_SOUND)
+    audioRef.current.load()
+  }, [])
 
   const playNotificationSound = useCallback(() => {
-    try {
-      const audio = new Audio(NOTIFICATION_SOUND)
-      audio.volume = 0.5
-      audio.play().catch(e => console.log('Audio play failed:', e))
-    } catch (err) {
-      console.log('Audio init failed:', err)
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0
+      audioRef.current.play().catch(e => console.log('Audio play failed:', e))
     }
   }, [])
 
   const triggerVibration = useCallback(() => {
     if ('vibrate' in navigator) {
-      navigator.vibrate([100, 50, 100])
+      navigator.vibrate([200, 100, 200])
     }
   }, [])
 
   useEffect(() => {
     if (notifications.length > 0) {
       const latest = notifications[0]
+      
+      // التحقق مما إذا كان الإشعار جديداً ولم يتم عرضه مسبقاً
+      // سنعتبر الإشعار جديداً إذا وصل في آخر 30 ثانية ولم يتم عرضه في هذه الجلسة
       const now = new Date().getTime()
       const created = new Date(latest.created_at).getTime()
-      const isNew = now - created < 3000 // أقل من 3 ثواني
+      const isRecentlyCreated = now - created < 30000 
       
-      if (isNew && !latest.is_read) {
-        const toastId = latest.id
-        if (!activeToasts.find(t => t.id === toastId)) {
-          setActiveToasts(prev => [...prev, latest])
-          playNotificationSound()
-          triggerVibration()
-          
-          setTimeout(() => {
-            setActiveToasts(prev => prev.filter(t => t.id !== toastId))
-          }, 6000)
-        }
+      if (isRecentlyCreated && !latest.is_read && !shownNotificationIds.current.has(latest.id)) {
+        shownNotificationIds.current.add(latest.id)
+        setActiveToasts(prev => [...prev, latest])
+        playNotificationSound()
+        triggerVibration()
+        
+        // إخفاء التنبيه تلقائياً بعد 8 ثواني
+        setTimeout(() => {
+          setActiveToasts(prev => prev.filter(t => t.id !== latest.id))
+        }, 8000)
       }
     }
-  }, [notifications, activeToasts, playNotificationSound, triggerVibration])
+  }, [notifications, playNotificationSound, triggerVibration])
 
   const removeToast = (id: string) => {
     setActiveToasts(prev => prev.filter(t => t.id !== id))
@@ -66,9 +73,9 @@ export function ToastNotifications() {
         <div 
           key={toast.id}
           onClick={() => handleToastClick(toast)}
-          className="glass-card p-4 flex items-start gap-4 animate-slide-in-right pointer-events-auto cursor-pointer active:scale-95 transition-all duration-200 border-l-4 shadow-2xl"
+          className="glass-card p-4 flex items-start gap-4 animate-slide-in-right pointer-events-auto cursor-pointer active:scale-95 transition-all duration-200 border-r-4 shadow-2xl"
           style={{ 
-            borderLeftColor: 
+            borderRightColor: 
               toast.type === 'approval' ? 'var(--color-primary)' : 
               toast.type === 'alert' ? 'var(--color-error)' : 
               'var(--color-success)' 
@@ -81,11 +88,10 @@ export function ToastNotifications() {
           }`}>
             {toast.type === 'approval' ? <Bell className="w-6 h-6 animate-bounce-in" /> :
              toast.type === 'alert' ? <AlertCircle className="w-6 h-6" /> :
-             toast.type === 'info' ? <Info className="w-6 h-6" /> :
              <CheckCircle className="w-6 h-6" />}
           </div>
           
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0" dir="rtl">
             <div className="flex items-center justify-between gap-2 mb-1">
               <p className="text-sm font-black text-foreground truncate">{toast.title}</p>
               <span className="text-[10px] text-muted-foreground whitespace-nowrap opacity-60">الآن</span>
