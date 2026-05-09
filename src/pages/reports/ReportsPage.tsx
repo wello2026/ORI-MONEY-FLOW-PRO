@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FileText, TrendingUp, Wallet, Calendar, ArrowRight, Building2, User, ChevronLeft, Printer, Share2 } from 'lucide-react'
+import { FileText, TrendingUp, Wallet, Calendar, Building2, User, ChevronLeft, Printer, Share2 } from 'lucide-react'
 import { useTransactionStore } from '@/stores/transactionStore'
 import { useAccountStore } from '@/stores/accountStore'
 import { useTransferStore } from '@/stores/transferStore'
