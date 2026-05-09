@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react'
-import { FileText, Download, TrendingUp, Wallet, Calendar, ArrowRight } from 'lucide-react'
+import { FileText, Download, TrendingUp, Wallet, Calendar, ArrowRight, Building2, User, ChevronLeft, Printer, Share2 } from 'lucide-react'
 import { useTransactionStore } from '@/stores/transactionStore'
 import { useAccountStore } from '@/stores/accountStore'
 import { useTransferStore } from '@/stores/transferStore'
+import { useProjectStore } from '@/stores/projectStore'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { exportTransactionsToCSV, exportAccountsToCSV, exportTransfersToCSV, printReport, generateDailyReport } from '@/lib/export'
+import { cn } from '@/lib/utils'
 
-type ReportType = 'daily' | 'accounts' | 'cashflow' | 'transactions' | 'transfers' | 'trial_balance' | 'general_ledger'
+type ReportType = 'daily' | 'accounts' | 'cashflow' | 'transactions' | 'transfers' | 'trial_balance' | 'projects'
 
 export default function ReportsPage() {
   const transactions = useTransactionStore((state) => state.transactions)
   const accounts = useAccountStore((state) => state.accounts)
   const transfers = useTransferStore((state) => state.transfers)
+  const projects = useProjectStore((state) => state.projects)
+  
   const fetchTransactions = useTransactionStore((state) => state.fetchTransactions)
   const fetchAccounts = useAccountStore((state) => state.fetchAccounts)
   const fetchTransfers = useTransferStore((state) => state.fetchTransfers)
+  const fetchProjects = useProjectStore((state) => state.fetchProjects)
 
   const [selectedReport, setSelectedReport] = useState<ReportType | null>(null)
   const [dateFrom, setDateFrom] = useState('')
@@ -24,523 +29,289 @@ export default function ReportsPage() {
     fetchTransactions()
     fetchAccounts()
     fetchTransfers()
-  }, [fetchTransactions, fetchAccounts, fetchTransfers])
+    fetchProjects()
+  }, [fetchTransactions, fetchAccounts, fetchTransfers, fetchProjects])
 
-  // فلترة المعاملات حسب التاريخ
+  // Filter Data
   const filteredTransactions = transactions.filter(t => {
     const tDate = new Date(t.created_at)
     tDate.setHours(0, 0, 0, 0)
-    
-    if (dateFrom) {
-      const fromDate = new Date(dateFrom)
-      fromDate.setHours(0, 0, 0, 0)
-      if (tDate < fromDate) return false
-    }
-    if (dateTo) {
-      const toDate = new Date(dateTo)
-      toDate.setHours(0, 0, 0, 0)
-      if (tDate > toDate) return false
-    }
+    if (dateFrom && tDate < new Date(dateFrom)) return false
+    if (dateTo && tDate > new Date(dateTo)) return false
     return true
   })
 
-  // فلترة التحويلات حسب التاريخ
-  const filteredTransfers = transfers.filter(t => {
-    const tDate = new Date(t.created_at)
-    tDate.setHours(0, 0, 0, 0)
-    
-    if (dateFrom) {
-      const fromDate = new Date(dateFrom)
-      fromDate.setHours(0, 0, 0, 0)
-      if (tDate < fromDate) return false
+  // Multi-Currency Totals
+  const totals = {
+    LYD: {
+      income: filteredTransactions.filter(t => ['deposit', 'income'].includes(t.type) && t.status === 'approved' && accounts.find(a => a.id === t.account_id)?.currency === 'LYD').reduce((s, t) => s + t.amount, 0),
+      expense: filteredTransactions.filter(t => ['withdrawal', 'expense', 'salary'].includes(t.type) && t.status === 'approved' && accounts.find(a => a.id === t.account_id)?.currency === 'LYD').reduce((s, t) => s + t.amount, 0),
+    },
+    USD: {
+      income: filteredTransactions.filter(t => ['deposit', 'income'].includes(t.type) && t.status === 'approved' && accounts.find(a => a.id === t.account_id)?.currency === 'USD').reduce((s, t) => s + t.amount, 0),
+      expense: filteredTransactions.filter(t => ['withdrawal', 'expense', 'salary'].includes(t.type) && t.status === 'approved' && accounts.find(a => a.id === t.account_id)?.currency === 'USD').reduce((s, t) => s + t.amount, 0),
     }
-    if (dateTo) {
-      const toDate = new Date(dateTo)
-      toDate.setHours(0, 0, 0, 0)
-      if (tDate > toDate) return false
-    }
-    return true
-  })
-
-  const totalIncome = filteredTransactions
-    .filter(t => ['deposit', 'income'].includes(t.type) && t.status === 'approved')
-    .reduce((sum, t) => sum + t.amount, 0)
-
-  const totalExpense = filteredTransactions
-    .filter(t => ['withdrawal', 'expense', 'salary'].includes(t.type) && t.status === 'approved')
-    .reduce((sum, t) => sum + t.amount, 0)
-
-  const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
-
-  const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      deposit: 'إيداع',
-      withdrawal: 'سحب',
-      expense: 'مصروف',
-      income: 'دخل',
-      salary: 'راتب'
-    }
-    return labels[type] || type
   }
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      pending: 'معلق',
-      approved: 'موافق',
-      rejected: 'مرفوض'
-    }
-    return labels[status] || status
-  }
-
-  const handleExportTransactions = () => {
-    exportTransactionsToCSV(filteredTransactions)
-  }
-
-  const handleExportAccounts = () => {
-    exportAccountsToCSV(accounts)
-  }
-
-  const handleExportTransfers = () => {
-    exportTransfersToCSV(filteredTransfers)
-  }
-
-  const handlePrintDaily = () => {
-    const content = generateDailyReport(filteredTransactions)
-    printReport('تقرير اليومية', content)
-  }
-
-  const renderReportContent = () => {
-    switch (selectedReport) {
-      case 'daily':
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">تقرير اليومية</h3>
-              <div className="flex gap-2">
-                <button onClick={handlePrintDaily} className="btn-primary flex items-center gap-2">
-                  <FileText className="w-4 h-4" /> طباعة
-                </button>
-                <button onClick={handleExportTransactions} className="btn-secondary flex items-center gap-2">
-                  <Download className="w-4 h-4" /> تصدير CSV
-                </button>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="kpi-card" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
-                <p className="text-sm opacity-80">الدخل</p>
-                <p className="text-xl font-bold">{formatCurrency(totalIncome)}</p>
-              </div>
-              <div className="kpi-card" style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}>
-                <p className="text-sm opacity-80">المصروفات</p>
-                <p className="text-xl font-bold">{formatCurrency(totalExpense)}</p>
-              </div>
-              <div className="kpi-card" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
-                <p className="text-sm opacity-80">الصافي</p>
-                <p className="text-xl font-bold">{formatCurrency(totalIncome - totalExpense)}</p>
-              </div>
-            </div>
-
-            <div className="card-elevated overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="p-3 text-right">المرجع</th>
-                    <th className="p-3 text-right">النوع</th>
-                    <th className="p-3 text-right">المبلغ</th>
-                    <th className="p-3 text-right">الحالة</th>
-                    <th className="p-3 text-right">التاريخ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.slice(0, 20).map((t) => (
-                    <tr key={t.id} className="border-t border-border">
-                      <td className="p-3">{t.reference}</td>
-                      <td className="p-3">{getTypeLabel(t.type)}</td>
-                      <td className={`p-3 font-bold ${['deposit', 'income'].includes(t.type) ? 'text-success' : 'text-error'}`}>
-                        {formatCurrency(t.amount)}
-                      </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          t.status === 'approved' ? 'bg-success/10 text-success' :
-                          t.status === 'pending' ? 'bg-warning/10 text-warning' :
-                          'bg-error/10 text-error'
-                        }`}>
-                          {getStatusLabel(t.status)}
-                        </span>
-                      </td>
-                      <td className="p-3">{formatDate(t.created_at)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
-
-      case 'accounts':
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">تقرير الحسابات</h3>
-              <button onClick={handleExportAccounts} className="btn-secondary flex items-center gap-2">
-                <Download className="w-4 h-4" /> تصدير CSV
-              </button>
-            </div>
-
-            <div className="kpi-card mb-4">
-              <p className="text-sm opacity-80">إجمالي أرصدة الحسابات</p>
-              <p className="text-3xl font-bold">{formatCurrency(totalBalance)}</p>
-            </div>
-
-            <div className="card-elevated overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="p-3 text-right">الكود</th>
-                    <th className="p-3 text-right">الاسم</th>
-                    <th className="p-3 text-right">النوع</th>
-                    <th className="p-3 text-right">الرصيد</th>
-                    <th className="p-3 text-right">الحالة</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {accounts.map((a) => (
-                    <tr key={a.id} className="border-t border-border">
-                      <td className="p-3">{a.code}</td>
-                      <td className="p-3 font-medium">{a.name}</td>
-                      <td className="p-3">{a.type}</td>
-                      <td className="p-3 font-bold">{formatCurrency(a.balance)}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          a.status === 'active' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {a.status === 'active' ? 'نشط' : 'غير نشط'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
-
-      case 'transfers':
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">تقرير التحويلات</h3>
-              <button onClick={handleExportTransfers} className="btn-secondary flex items-center gap-2">
-                <Download className="w-4 h-4" /> تصدير CSV
-              </button>
-            </div>
-
-            <div className="card-elevated overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="p-3 text-right">المرجع</th>
-                    <th className="p-3 text-right">من</th>
-                    <th className="p-3 text-right">إلى</th>
-                    <th className="p-3 text-right">المبلغ</th>
-                    <th className="p-3 text-right">الحالة</th>
-                    <th className="p-3 text-right">التاريخ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransfers.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                        لا توجد تحويلات في هذه الفترة
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredTransfers.map((t) => {
-                      const source = accounts.find(a => a.id === t.source_account_id)
-                      const dest = accounts.find(a => a.id === t.destination_account_id)
-                      return (
-                        <tr key={t.id} className="border-t border-border">
-                          <td className="p-3">{t.reference}</td>
-                          <td className="p-3 font-medium text-error">
-                            <div className="flex flex-col">
-                              <span>{source?.name || '-'}</span>
-                              <span className="text-[10px] opacity-50">{source?.code}</span>
-                            </div>
-                          </td>
-                          <td className="p-3 font-medium text-success">
-                            <div className="flex flex-col">
-                              <span>{dest?.name || '-'}</span>
-                              <span className="text-[10px] opacity-50">{dest?.code}</span>
-                            </div>
-                          </td>
-                          <td className="p-3 font-bold">{formatCurrency(t.amount)}</td>
-                          <td className="p-3">
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              t.status === 'approved' ? 'bg-success/10 text-success' :
-                              t.status === 'pending' ? 'bg-warning/10 text-warning' :
-                              'bg-error/10 text-error'
-                            }`}>
-                              {getStatusLabel(t.status)}
-                            </span>
-                          </td>
-                          <td className="p-3 text-xs">{formatDate(t.created_at)}</td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
-
-      case 'cashflow':
-        const byType = transactions
-          .filter(t => t.status === 'approved')
-          .reduce((acc, t) => {
-            acc[t.type] = (acc[t.type] || 0) + t.amount
-            return acc
-          }, {} as Record<string, number>)
-
-        return (
-          <div className="space-y-4">
-            <h3 className="font-semibold">تقرير التدفق النقدي</h3>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {Object.entries(byType).map(([type, amount]) => (
-                <div key={type} className="card-elevated p-3">
-                  <p className="text-sm text-muted-foreground">{getTypeLabel(type)}</p>
-                  <p className="text-lg font-bold">{formatCurrency(amount)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-
-      case 'trial_balance':
-        const debitAccounts = accounts.filter(a => ['cashbox', 'bank', 'expense', 'employee'].includes(a.type))
-        const creditAccounts = accounts.filter(a => ['income', 'temporary'].includes(a.type))
-        
-        const totalDebits = debitAccounts.reduce((sum, a) => sum + a.balance, 0)
-        const totalCredits = creditAccounts.reduce((sum, a) => sum + a.balance, 0)
-
-        return (
-          <div className="space-y-4">
-            <h3 className="font-semibold">ميزان المراجعة (Trial Balance)</h3>
-            <div className="card-elevated overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="p-3 text-right">رقم الحساب</th>
-                    <th className="p-3 text-right">اسم الحساب</th>
-                    <th className="p-3 text-left">مدين (Debit)</th>
-                    <th className="p-3 text-left">دائن (Credit)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {accounts.map(a => {
-                    const isDebit = ['cashbox', 'bank', 'expense', 'employee'].includes(a.type)
-                    return (
-                      <tr key={a.id} className="border-t border-border">
-                        <td className="p-3">{a.code}</td>
-                        <td className="p-3">{a.name}</td>
-                        <td className="p-3 text-left font-medium text-info">{isDebit && a.balance !== 0 ? formatCurrency(a.balance) : '-'}</td>
-                        <td className="p-3 text-left font-medium text-warning">{!isDebit && a.balance !== 0 ? formatCurrency(a.balance) : '-'}</td>
-                      </tr>
-                    )
-                  })}
-                  <tr className="border-t-2 border-border bg-muted/50 font-bold">
-                    <td className="p-3" colSpan={2}>الإجمالي</td>
-                    <td className="p-3 text-left text-info">{formatCurrency(totalDebits)}</td>
-                    <td className="p-3 text-left text-warning">{formatCurrency(totalCredits)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
-
-      case 'general_ledger':
-        return (
-          <div className="space-y-4">
-            <h3 className="font-semibold">دفتر الأستاذ العام (General Ledger)</h3>
-            <div className="space-y-6">
-              {accounts.map(account => {
-                const accTxs = transactions.filter(t => t.account_id === account.id || (t as any).offset_account_id === account.id)
-                if (accTxs.length === 0) return null
-                
-                return (
-                  <div key={account.id} className="card-elevated overflow-hidden">
-                    <div className="bg-muted p-3 border-b border-border flex justify-between items-center">
-                      <span className="font-bold">{account.name} ({account.code})</span>
-                      <span className="text-sm">الرصيد الحالي: {formatCurrency(account.balance)}</span>
-                    </div>
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr>
-                          <th className="p-3 text-right text-xs">التاريخ</th>
-                          <th className="p-3 text-right text-xs">المرجع</th>
-                          <th className="p-3 text-right text-xs">النوع</th>
-                          <th className="p-3 text-left text-xs">مدين</th>
-                          <th className="p-3 text-left text-xs">دائن</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {accTxs.map(t => {
-                          const isPrimary = t.account_id === account.id
-                          const isDeposit = ['deposit', 'income'].includes(t.type)
-                          // Simplified GL logic
-                          const debitAmount = (isPrimary && isDeposit) || (!isPrimary && !isDeposit) ? t.amount : 0
-                          const creditAmount = (isPrimary && !isDeposit) || (!isPrimary && isDeposit) ? t.amount : 0
-                          
-                          return (
-                            <tr key={t.id} className="border-t border-border">
-                              <td className="p-3">{formatDate(t.created_at)}</td>
-                              <td className="p-3">{t.reference}</td>
-                              <td className="p-3">{getTypeLabel(t.type)}</td>
-                              <td className="p-3 text-left text-info">{debitAmount ? formatCurrency(debitAmount) : '-'}</td>
-                              <td className="p-3 text-left text-warning">{creditAmount ? formatCurrency(creditAmount) : '-'}</td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )
-
-      default:
-        return null
-    }
+  const handlePrint = () => {
+    window.print()
   }
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1 className="page-title">التقارير</h1>
-        <p className="page-subtitle">استخرج واطبع التقارير المالية</p>
+    <div className="page-container pb-24 animate-fade-in print:p-0 print:bg-white">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 print:hidden">
+        <div>
+          <h1 className="text-4xl font-black text-foreground tracking-tighter">المركز التحليلي</h1>
+          <p className="text-muted-foreground font-bold">التقارير المالية والرقابة الميدانية للمشاريع</p>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={handlePrint} className="btn-secondary px-6 py-3 rounded-2xl flex items-center gap-2 font-black shadow-sm">
+            <Printer className="w-5 h-5" />
+            <span>طباعة</span>
+          </button>
+          <button className="btn-primary px-6 py-3 rounded-2xl flex items-center gap-2 font-black shadow-gold">
+            <Share2 className="w-5 h-5" />
+            <span>مشاركة</span>
+          </button>
+        </div>
       </div>
 
-      {/* فلاتر التاريخ */}
-      <div className="card-elevated p-4 mb-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm">من:</span>
-            <input 
-              type="date" 
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="input-field text-sm"
-            />
+      {/* Date Filters */}
+      <div className="glass-card p-6 mb-8 border-r-4 border-r-primary print:hidden">
+        <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-primary" />
+            <span className="font-black text-sm">الفترة من:</span>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-card border-2 border-border rounded-xl px-4 py-2 outline-none focus:border-primary transition-all font-bold" />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm">إلى:</span>
-            <input 
-              type="date" 
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="input-field text-sm"
-            />
+          <div className="flex items-center gap-3">
+            <span className="font-black text-sm">إلى:</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-card border-2 border-border rounded-xl px-4 py-2 outline-none focus:border-primary transition-all font-bold" />
           </div>
           {(dateFrom || dateTo) && (
-            <button 
-              onClick={() => { setDateFrom(''); setDateTo('') }}
-              className="text-sm text-error"
-            >
-              مسح
-            </button>
+            <button onClick={() => { setDateFrom(''); setDateTo('') }} className="text-error font-black text-sm hover:underline">إلغاء الفلترة</button>
           )}
         </div>
       </div>
 
-      {/* ملخص */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className="kpi-card" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
-          <p className="text-sm opacity-80">الدخل</p>
-          <p className="text-xl font-bold">{formatCurrency(totalIncome)}</p>
+      {/* Currency Totals Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div className="glass-card p-8 relative overflow-hidden border-b-4 border-primary">
+          <div className="absolute top-0 right-0 p-4 opacity-5"><Wallet className="w-24 h-24" /></div>
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">إجمالي الحركة (دينار ليبي)</p>
+          <div className="flex justify-between items-end">
+            <div>
+              <p className="text-3xl font-black text-foreground">{formatCurrency(totals.LYD.income - totals.LYD.expense, 'LYD')}</p>
+              <p className="text-xs font-bold text-muted-foreground mt-1">الصافي المتاح حالياً</p>
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-bold text-success">+{formatCurrency(totals.LYD.income, 'LYD')}</p>
+              <p className="text-xs font-bold text-error">-{formatCurrency(totals.LYD.expense, 'LYD')}</p>
+            </div>
+          </div>
         </div>
-        <div className="kpi-card" style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}>
-          <p className="text-sm opacity-80">المصروفات</p>
-          <p className="text-xl font-bold">{formatCurrency(totalExpense)}</p>
-        </div>
-        <div className="kpi-card">
-          <p className="text-sm opacity-80">الأرصدة</p>
-          <p className="text-xl font-bold">{formatCurrency(totalBalance)}</p>
-        </div>
-        <div className="kpi-card" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
-          <p className="text-sm opacity-80">صافي</p>
-          <p className="text-xl font-bold">{formatCurrency(totalIncome - totalExpense)}</p>
+        <div className="glass-card p-8 relative overflow-hidden border-b-4 border-info">
+          <div className="absolute top-0 right-0 p-4 opacity-5"><TrendingUp className="w-24 h-24" /></div>
+          <p className="text-[10px] font-black text-info uppercase tracking-widest mb-2">إجمالي الحركة (دولار أمريكي)</p>
+          <div className="flex justify-between items-end">
+            <div>
+              <p className="text-3xl font-black text-foreground">{formatCurrency(totals.USD.income - totals.USD.expense, 'USD')}</p>
+              <p className="text-xs font-bold text-muted-foreground mt-1">الصافي المتاح حالياً</p>
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-bold text-success">+{formatCurrency(totals.USD.income, 'USD')}</p>
+              <p className="text-xs font-bold text-error">-{formatCurrency(totals.USD.expense, 'USD')}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* قائمة التقارير */}
+      {/* Report Selection or Content */}
       {!selectedReport ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <button 
-            onClick={() => setSelectedReport('daily')}
-            className="card-elevated p-4 text-right hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-              <FileText className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="font-semibold mb-1">تقرير اليومية</h3>
-            <p className="text-sm text-muted-foreground">ملخص المعاملات</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ReportButton 
+            id="daily" title="تقرير اليومية" desc="سجل الحركات المالية التفصيلي" icon={<FileText />} color="primary" 
+            onClick={() => setSelectedReport('daily')} 
+          />
+          <ReportButton 
+            id="projects" title="تحليل المشاريع" desc="مصاريف كل موقع بناء على حدة" icon={<Building2 />} color="success" 
+            onClick={() => setSelectedReport('projects')} 
+          />
+          <ReportButton 
+            id="accounts" title="أرصدة الخزائن" desc="كشف أرصدة المهندسين والعهـد" icon={<Wallet />} color="warning" 
+            onClick={() => setSelectedReport('accounts')} 
+          />
+          <ReportButton 
+            id="transfers" title="سجل التحويلات" desc="مراقبة حركة الأموال بين الحسابات" icon={<Share2 />} color="info" 
+            onClick={() => setSelectedReport('transfers')} 
+          />
+          <ReportButton 
+            id="cashflow" title="التدفق النقدي" desc="تحليل السيولة الداخلة والخارجة" icon={<TrendingUp />} color="error" 
+            onClick={() => setSelectedReport('cashflow')} 
+          />
+          <ReportButton 
+            id="trial_balance" title="ميزان المراجعة" desc="التقرير المحاسبي الختامي" icon={<FileText />} color="secondary" 
+            onClick={() => setSelectedReport('trial_balance')} 
+          />
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <button onClick={() => setSelectedReport(null)} className="flex items-center gap-2 text-primary font-black text-sm hover:translate-x-1 transition-transform mb-6 print:hidden">
+            <ChevronLeft className="w-5 h-5 rotate-180" />
+            <span>العودة لقائمة التقارير</span>
           </button>
+          
+          <div className="glass-card p-8 min-h-[600px] border-t-8 border-t-primary shadow-2xl relative overflow-hidden bg-white/50 backdrop-blur-xl">
+             {renderReport(selectedReport, { filteredTransactions, accounts, transfers, projects, totals })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
-          <button 
-            onClick={() => setSelectedReport('accounts')}
-            className="card-elevated p-4 text-right hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-3">
-              <Wallet className="w-6 h-6 text-success" />
-            </div>
-            <h3 className="font-semibold mb-1">تقرير الحسابات</h3>
-            <p className="text-sm text-muted-foreground">جميع الحسابات والأرصدة</p>
-          </button>
+function ReportButton({ title, desc, icon, color, onClick }: any) {
+  const colors: any = {
+    primary: 'bg-primary/10 text-primary',
+    success: 'bg-success/10 text-success',
+    warning: 'bg-warning/10 text-warning',
+    info: 'bg-info/10 text-info',
+    error: 'bg-error/10 text-error',
+    secondary: 'bg-secondary/10 text-secondary'
+  }
 
-          <button 
-            onClick={() => setSelectedReport('transfers')}
-            className="card-elevated p-4 text-right hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center mb-3">
-              <ArrowRight className="w-6 h-6 text-warning" />
-            </div>
-            <h3 className="font-semibold mb-1">تقرير التحويلات</h3>
-            <p className="text-sm text-muted-foreground">سجل التحويلات</p>
-          </button>
+  return (
+    <button onClick={onClick} className="glass-card p-8 group hover:scale-[1.02] transition-all duration-300 text-right relative overflow-hidden border-2 border-transparent hover:border-primary/20">
+      <div className={cn("w-16 h-16 rounded-3xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 group-hover:rotate-6", colors[color])}>
+        {icon}
+      </div>
+      <h3 className="text-xl font-black text-foreground mb-2">{title}</h3>
+      <p className="text-sm text-muted-foreground font-bold">{desc}</p>
+    </button>
+  )
+}
 
-          <button 
-            onClick={() => setSelectedReport('cashflow')}
-            className="card-elevated p-4 text-right hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 rounded-xl bg-info/10 flex items-center justify-center mb-3">
-              <TrendingUp className="w-6 h-6 text-info" />
-            </div>
-            <h3 className="font-semibold mb-1">تقرير التدفق</h3>
-            <p className="text-sm text-muted-foreground">الدخل والمصروفات</p>
-          </button>
+function renderReport(type: ReportType, data: any) {
+  const { filteredTransactions, accounts, transfers, projects } = data
 
-          <button 
-            onClick={() => setSelectedReport('trial_balance')}
-            className="card-elevated p-4 text-right hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-              <FileText className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="font-semibold mb-1">ميزان المراجعة</h3>
-            <p className="text-sm text-muted-foreground">أرصدة مدينة ودائنة</p>
-          </button>
-
-          <button 
-            onClick={() => setSelectedReport('general_ledger')}
-            className="card-elevated p-4 text-right hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-3">
+  switch (type) {
+    case 'daily':
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b pb-6 border-border/50">
+             <h2 className="text-2xl font-black">تقرير اليومية التفصيلي</h2>
+             <div className="text-left">
+               <p className="text-[10px] font-black text-muted-foreground uppercase">تاريخ التقرير</p>
+               <p className="font-bold">{formatDate(new Date().toISOString())}</p>
+             </div>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="p-4 text-right font-black">المرجع</th>
+                <th className="p-4 text-right font-black">البيان</th>
+                <th className="p-4 text-right font-black">الحساب</th>
+                <th className="p-4 text-right font-black">المبلغ</th>
+                <th className="p-4 text-right font-black">الحالة</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
+              {filteredTransactions.map((t: any) => (
+                <tr key={t.id} className="hover:bg-primary/5 transition-colors">
+                  <td className="p-4 font-bold">{t.reference}</td>
+                  <td className="p-4 font-bold text-muted-foreground">{t.description || t.type}</td>
+                  <td className="p-4 font-bold">{accounts.find((a: any) => a.id === t.account_id)?.name}</td>
+                  <td className={cn("p-4 font-black", ['deposit', 'income'].includes(t.type) ? "text-success" : "text-error")}>
+                    {formatCurrency(t.amount, accounts.find((a: any) => a.id === t.account_id)?.currency)}
+                  </td>
+                  <td className="p-4">
+                     <span className={cn("px-3 py-1 rounded-full text-[10px] font-black", t.status === 'approved' ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+                       {t.status === 'approved' ? 'معتمد' : 'معلق'}
+                     </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    case 'projects':
+      return (
+        <div className="space-y-8">
+           <div className="flex items-center justify-between border-b pb-6 border-border/50">
+             <h2 className="text-2xl font-black">تحليل مصاريف المواقع</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {projects.map((p: any) => {
+               const pTxs = filteredTransactions.filter((t: any) => (t as any).project_id === p.id && t.status === 'approved')
+               const totalSpent = pTxs.filter((t: any) => ['expense', 'withdrawal', 'salary'].includes(t.type)).reduce((s: any, t: any) => s + t.amount, 0)
+               return (
+                 <div key={p.id} className="p-6 rounded-3xl bg-card border-2 border-border/50 hover:border-primary/30 transition-all">
+                    <div className="flex justify-between items-start mb-6">
+                      <div>
+                        <h4 className="text-lg font-black text-foreground">{p.name}</h4>
+                        <p className="text-xs text-muted-foreground font-bold">{p.code}</p>
+                      </div>
+                      <div className="bg-primary/10 text-primary p-3 rounded-2xl"><Building2 className="w-6 h-6" /></div>
+                    </div>
+                    <div className="space-y-4">
+                       <div className="flex justify-between items-center">
+                         <span className="text-sm font-bold text-muted-foreground">إجمالي المصاريف الميدانية</span>
+                         <span className="text-xl font-black text-error">{formatCurrency(totalSpent)}</span>
+                       </div>
+                       <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: '45%' }} />
+                       </div>
+                       <p className="text-[10px] font-black text-muted-foreground uppercase text-center">{pTxs.length} عملية صرف معتمدة</p>
+                    </div>
+                 </div>
+               )
+            })}
+          </div>
+        </div>
+      )
+    case 'accounts':
+      return (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-black border-b pb-6 border-border/50">كشف عُهد المهندسين</h2>
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="p-4 text-right font-black">المهندس / الحساب</th>
+                <th className="p-4 text-right font-black">الكود</th>
+                <th className="p-4 text-right font-black">الرصيد المتاح</th>
+                <th className="p-4 text-right font-black">العملة</th>
+                <th className="p-4 text-right font-black">الحالة</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
+              {accounts.filter((a: any) => a.type === 'cashbox' || a.type === 'employee').map((a: any) => (
+                <tr key={a.id}>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary"><User className="w-5 h-5" /></div>
+                      <span className="font-black">{a.name}</span>
+                    </div>
+                  </td>
+                  <td className="p-4 font-bold text-muted-foreground">{a.code}</td>
+                  <td className="p-4 font-black text-lg">{formatCurrency(a.balance, a.currency)}</td>
+                  <td className="p-4 font-bold">{a.currency}</td>
+                  <td className="p-4">
+                     <span className={cn("px-3 py-1 rounded-full text-[10px] font-black", a.status === 'active' ? "bg-success/10 text-success" : "bg-muted/50 text-muted-foreground")}>
+                       {a.status === 'active' ? 'نشط' : 'متوقف'}
+                     </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    default:
+      return <div className="p-20 text-center font-black opacity-20 text-4xl">قيد التطوير...</div>
+  }
+}
+s-center justify-center mb-3">
               <Wallet className="w-6 h-6 text-success" />
             </div>
             <h3 className="font-semibold mb-1">دفتر الأستاذ</h3>

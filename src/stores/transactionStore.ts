@@ -58,7 +58,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       const from = (page - 1) * limit
       const to = from + limit - 1
 
-      // 1. Fetch from Local DB (Dexie) first for immediate response
+      // 1. Fetch from Local DB (Dexie) first
       let localData = await db.transactions.orderBy('created_at').reverse().toArray()
       
       if (filter?.type && filter.type !== 'all') {
@@ -67,7 +67,10 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       if (filter?.status && filter.status !== 'all') {
         localData = localData.filter(t => t.status === filter.status)
       }
-      if (currentUser?.role === 'viewer' || currentUser?.role === 'employee') {
+      if (filter?.project_id) {
+        localData = localData.filter(t => (t as any).project_id === filter.project_id)
+      }
+      if (currentUser?.role === 'employee') {
         localData = localData.filter(t => t.created_by === currentUser.id)
       }
 
@@ -94,7 +97,10 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
         if (filter?.status && filter.status !== 'all') {
           query = query.eq('status', filter.status)
         }
-        if (currentUser?.role === 'viewer' || currentUser?.role === 'employee') {
+        if (filter?.project_id) {
+          query = query.eq('project_id', filter.project_id)
+        }
+        if (currentUser?.role === 'employee') {
           query = query.eq('created_by', currentUser.id)
         }
 
@@ -103,14 +109,17 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
         if (error) {
           console.error(`خطأ في جلب المعاملات من الخادم: ${error.message}`)
         } else if (data) {
-          const localTransactions = await db.transactions.toArray()
+          const allLocalTransactions = await db.transactions.toArray()
           const pendingQueue = await db.sync_queue.filter(q => q.table === 'transactions').toArray()
           const pendingIds = new Set(pendingQueue.map(q => (q.data as any).id))
           const remoteIds = new Set(data.map(t => t.id))
 
-          // 1. Delete dead local rows (only for the current range/view for performance, or all if feasible)
-          const deadIds = localTransactions
-            .filter(t => !remoteIds.has(t.id) && !pendingIds.has(t.id))
+          // 1. Delete dead local rows (restricted by role)
+          const deadIds = allLocalTransactions
+            .filter(t => {
+              if (currentUser?.role === 'employee' && t.created_by !== currentUser.id) return false
+              return !remoteIds.has(t.id) && !pendingIds.has(t.id)
+            })
             .map(t => t.id)
           
           if (deadIds.length > 0) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TrendingUp, TrendingDown, Wallet, RefreshCw, Brain, LayoutDashboard, Building, Users, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, RefreshCw, Brain, LayoutDashboard, Building, Users, ArrowUpRight, ArrowDownRight, Coins } from 'lucide-react'
 import { useAccountStore } from '@/stores/accountStore'
 import { useTransactionStore } from '@/stores/transactionStore'
 import { ROUTES } from '@/lib/constants'
@@ -47,77 +47,80 @@ export default function DashboardPage() {
     setIsRefreshing(false)
   }
 
+  const totalLYD = accounts.filter(a => a.currency === 'LYD').reduce((sum, a) => sum + a.balance, 0)
+  const totalUSD = accounts.filter(a => a.currency === 'USD').reduce((sum, a) => sum + a.balance, 0)
   const recentTransactions = transactions.slice(0, 5)
 
   return (
     <div className="space-y-8 pb-24 animate-fade-in">
-      {/* Golden Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-foreground tracking-tight">الرئيسية الذهبية</h1>
-          <p className="text-muted-foreground text-sm">أهلاً بك في لوحة تحكم ORI الاحترافية</p>
+          <h1 className="text-4xl font-black text-foreground tracking-tighter">المركز المالي الذهبي</h1>
+          <p className="text-muted-foreground text-sm font-bold">الرؤية الشاملة لشركة المقاولات</p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="w-12 h-12 rounded-2xl bg-card border-2 border-border flex items-center justify-center hover:border-primary transition-all shadow-sm"
+          className="w-14 h-14 rounded-3xl bg-card border-2 border-border flex items-center justify-center hover:border-primary transition-all shadow-gold"
         >
-          <RefreshCw className={`w-5 h-5 text-primary ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-6 h-6 text-primary ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      {/* KPI Cards */}
+      {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard 
-          title="إجمالي الرصيد" 
-          value={accounts.reduce((sum, a) => sum + a.balance, 0)} 
-          trend="+12%" 
+          title="إجمالي السيولة (دينار)" 
+          value={totalLYD} 
+          unit="LYD"
+          trend="+5.2%" 
           icon={<Wallet className="w-6 h-6" />}
           color="primary"
         />
         <KpiCard 
-          title="المشاريع النشطة" 
+          title="إجمالي السيولة (دولار)" 
+          value={totalUSD} 
+          unit="USD"
+          trend="+1.8%" 
+          icon={<Coins className="w-6 h-6" />}
+          color="info"
+        />
+        <KpiCard 
+          title="مواقع البناء" 
           value={stats.projects} 
           unit="موقع"
-          trend="+2" 
+          trend="نشط" 
           icon={<Building className="w-6 h-6" />}
           color="success"
         />
         <KpiCard 
-          title="المصاريف (الشهر)" 
-          value={12450} 
-          trend="-5%" 
-          icon={<TrendingDown className="w-6 h-6" />}
-          color="error"
-        />
-        <KpiCard 
-          title="الفريق الميداني" 
+          title="فريق العمل الميداني" 
           value={stats.users} 
-          unit="عضو"
-          trend="نشط" 
+          unit="مهندس/عامل"
+          trend="متصل" 
           icon={<Users className="w-6 h-6" />}
-          color="info"
+          color="warning"
         />
       </div>
 
-      <div className="flex bg-muted/50 p-1 rounded-2xl w-full max-w-sm border-2 border-border/50">
+      <div className="flex bg-card p-1.5 rounded-3xl w-full max-w-sm border-2 border-border/50 shadow-inner">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${
-            activeTab === 'overview' ? 'bg-card shadow-md text-foreground' : 'text-muted-foreground hover:text-foreground'
+          className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-sm font-black transition-all ${
+            activeTab === 'overview' ? 'bg-background shadow-gold text-primary' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <LayoutDashboard className="w-4 h-4" />
+          <LayoutDashboard className="w-5 h-5" />
           النظرة العامة
         </button>
         <button
           onClick={() => setActiveTab('ai')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-sm font-black transition-all ${
             activeTab === 'ai' ? 'bg-primary text-white shadow-gold' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Brain className="w-4 h-4" />
-          الذكاء الاصطناعي
+          <Brain className="w-5 h-5" />
+          تحليل الذكاء
         </button>
       </div>
 
@@ -126,44 +129,50 @@ export default function DashboardPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <div className="glass-card p-6">
-              <h3 className="text-lg font-black mb-6 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                تحليل السيولة والمصاريف
-              </h3>
+            <div className="glass-card p-8">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-xl font-black flex items-center gap-3">
+                    <TrendingUp className="w-6 h-6 text-primary" />
+                    المسار المالي للمشاريع
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">تتبع التدفقات النقدية والمصاريف الميدانية</p>
+                </div>
+              </div>
               <DashboardCharts />
             </div>
 
             <div className="glass-card overflow-hidden">
               <div className="p-6 border-b border-border/50 flex items-center justify-between bg-muted/20">
-                <h3 className="font-black">أحدث المعاملات الميدانية</h3>
-                <Link to={ROUTES.TRANSACTIONS} className="text-xs font-bold text-primary hover:underline">عرض السجل</Link>
+                <h3 className="font-black text-lg">أحدث المعاملات (الميدان)</h3>
+                <Link to={ROUTES.TRANSACTIONS} className="btn-secondary text-[10px] py-2 px-4 rounded-xl font-black">عرض الكل</Link>
               </div>
               <div className="divide-y divide-border/30">
-                {recentTransactions.map((tx) => (
-                  <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-primary/5 transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                {recentTransactions.length > 0 ? recentTransactions.map((tx) => (
+                  <div key={tx.id} className="p-6 flex items-center justify-between hover:bg-primary/5 transition-all group">
+                    <div className="flex items-center gap-5">
+                      <div className={`w-14 h-14 rounded-3xl flex items-center justify-center transition-transform group-hover:scale-110 ${
                         ['deposit', 'income'].includes(tx.type) ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
                       }`}>
-                        {['deposit', 'income'].includes(tx.type) ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
+                        {['deposit', 'income'].includes(tx.type) ? <ArrowUpRight className="w-7 h-7" /> : <ArrowDownRight className="w-7 h-7" />}
                       </div>
                       <div>
-                        <p className="font-black text-foreground group-hover:text-primary transition-colors">{tx.type}</p>
-                        <p className="text-xs text-muted-foreground truncate max-w-[150px]">{tx.reference}</p>
+                        <p className="font-black text-foreground text-lg">{tx.type}</p>
+                        <p className="text-xs text-muted-foreground font-bold">{tx.reference} • {formatRelativeTime(tx.created_at)}</p>
                       </div>
                     </div>
                     <div className="text-left">
-                      <p className={`font-black ${
+                      <p className={`text-xl font-black ${
                         ['deposit', 'income'].includes(tx.type) ? 'text-success' : 'text-error'
                       }`}>
                         {['deposit', 'income'].includes(tx.type) ? '+' : '-'}
                         {formatCurrency(tx.amount)}
                       </p>
-                      <p className="text-[10px] text-muted-foreground font-bold">{formatRelativeTime(tx.created_at)}</p>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="p-10 text-center text-muted-foreground">لا توجد معاملات بعد</div>
+                )}
               </div>
             </div>
           </div>
@@ -171,33 +180,35 @@ export default function DashboardPage() {
           <div className="space-y-8">
             <div className="glass-card">
               <div className="p-6 border-b border-border/50 bg-muted/20">
-                <h3 className="font-black">عُهد المهندسين</h3>
+                <h3 className="font-black text-lg">توزيع السيولة (العهـد)</h3>
               </div>
               <div className="p-4 space-y-4">
-                {accounts.slice(0, 5).map((account) => (
-                  <div key={account.id} className="flex items-center justify-between p-3 rounded-2xl border-2 border-transparent hover:border-primary/20 hover:bg-primary/5 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary">
-                        <Users className="w-5 h-5" />
+                {accounts.filter(a => a.type === 'cashbox' || a.type === 'employee').slice(0, 6).map((account) => (
+                  <div key={account.id} className="flex items-center justify-between p-4 rounded-2xl border-2 border-transparent hover:border-primary/20 hover:bg-primary/5 transition-all cursor-pointer">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-primary shadow-sm">
+                        <Users className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-sm font-black">{account.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{account.code}</p>
+                        <p className="font-black text-foreground">{account.name}</p>
+                        <p className="text-[10px] text-muted-foreground font-bold tracking-tighter uppercase">{account.code} • {account.currency}</p>
                       </div>
                     </div>
-                    <p className="text-sm font-black text-foreground">{formatCurrency(account.balance)}</p>
+                    <p className="text-lg font-black text-foreground">{formatCurrency(account.balance, account.currency)}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-primary/10 rounded-3xl p-6 relative overflow-hidden group">
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl group-hover:scale-125 transition-all duration-700" />
-              <h4 className="text-lg font-black text-primary mb-2 relative z-10">تحتاج للمساعدة؟</h4>
-              <p className="text-xs text-primary/70 mb-4 relative z-10">تواصل مع الدعم الفني لضبط إعدادات شجرة الحسابات.</p>
-              <button className="w-full bg-primary text-white py-3 rounded-xl font-bold text-sm shadow-gold relative z-10">
-                تواصل الآن
-              </button>
+            <div className="bg-gradient-to-br from-primary to-primary-dark rounded-3xl p-8 relative overflow-hidden group shadow-gold">
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-all duration-1000" />
+              <div className="relative z-10">
+                <h4 className="text-2xl font-black text-white mb-3">النظام الذهبي ORI</h4>
+                <p className="text-sm text-white/80 font-bold mb-6">لقد قمت بترقية النظام إلى النسخة الاحترافية المتكاملة لشركات المقاولات.</p>
+                <button className="w-full bg-white text-primary py-4 rounded-2xl font-black text-md shadow-lg hover:bg-opacity-90 transition-all active:scale-95">
+                  الدليل المحاسبي الشامل
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -206,28 +217,37 @@ export default function DashboardPage() {
   )
 }
 
-function KpiCard({ title, value, unit = 'LYD', trend, icon, color }: any) {
+function KpiCard({ title, value, unit, trend, icon, color }: any) {
   const colorMap: any = {
-    primary: 'text-primary bg-primary/10',
-    success: 'text-success bg-success/10',
-    error: 'text-error bg-error/10',
-    info: 'text-info bg-info/10'
+    primary: 'text-primary bg-primary/10 border-primary',
+    success: 'text-success bg-success/10 border-success',
+    error: 'text-error bg-error/10 border-error',
+    info: 'text-info bg-info/10 border-info',
+    warning: 'text-warning bg-warning/10 border-warning'
   }
 
   return (
-    <div className="glass-card p-6 relative overflow-hidden group hover:scale-[1.05] transition-all duration-500">
-      <div className={`absolute top-0 right-0 w-1 h-full bg-${color}`} />
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${colorMap[color]}`}>
+    <div className="glass-card p-8 relative overflow-hidden group hover:scale-[1.05] transition-all duration-500 border-b-4">
+      <div className={`absolute bottom-0 left-0 h-1 w-full opacity-30 ${colorMap[color].split(' ')[1]}`} />
+      <div className="flex items-start justify-between mb-6">
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${colorMap[color].split(' ').slice(0,2).join(' ')}`}>
           {icon}
         </div>
         <div className="text-left">
-          <span className={`text-[10px] font-black px-2 py-1 rounded-full ${colorMap[color]}`}>
+          <span className={`text-[10px] font-black px-3 py-1 rounded-full ${colorMap[color].split(' ').slice(0,2).join(' ')}`}>
             {trend}
           </span>
         </div>
       </div>
-      <p className="text-xs font-bold text-muted-foreground mb-1">{title}</p>
+      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-1">{title}</p>
+      <h3 className="text-3xl font-black text-foreground">
+        {typeof value === 'number' ? value.toLocaleString(undefined, { minimumFractionDigits: 2 }) : value} 
+        <span className="text-xs font-bold text-muted-foreground mr-2">{unit}</span>
+      </h3>
+    </div>
+  )
+}
+1">{title}</p>
       <h3 className="text-2xl font-black text-foreground">
         {typeof value === 'number' ? value.toLocaleString() : value} 
         <span className="text-xs font-normal text-muted-foreground mr-1">{unit}</span>

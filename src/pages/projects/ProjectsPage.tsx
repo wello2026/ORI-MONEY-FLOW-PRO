@@ -1,136 +1,236 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Building, MapPin, Clock } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { Plus, Search, Building, MapPin, Clock, X, DollarSign, Loader2 } from 'lucide-react'
+import { useProjectStore } from '@/stores/projectStore'
+import { useAuthStore } from '@/stores/authStore'
+import { formatCurrency } from '@/lib/format'
+import { cn } from '@/lib/utils'
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { projects, isLoading, fetchProjects, createProject } = useProjectStore()
+  const user = useAuthStore((state) => state.user)
   const [searchTerm, setSearchTerm] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    budget: 0,
+    currency: 'LYD',
+    description: ''
+  })
 
   useEffect(() => {
     fetchProjects()
-  }, [])
+  }, [fetchProjects])
 
-  async function fetchProjects() {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setProjects(data || [])
-    } catch (err) {
-      console.error('Error fetching projects:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin'
 
   const filteredProjects = projects.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.location && p.location.toLowerCase().includes(searchTerm.toLowerCase()))
+    p.code.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const result = await createProject(formData)
+    if (result.success) {
+      setIsModalOpen(false)
+      setFormData({ name: '', code: '', budget: 0, currency: 'LYD', description: '' })
+    }
+  }
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="page-container pb-24">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-2xl font-black text-foreground">إدارة المشاريع</h1>
-          <p className="text-muted-foreground text-sm">مراقبة مواقع العمل والميزانيات</p>
+          <h1 className="text-4xl font-black text-foreground tracking-tighter">إدارة المواقع</h1>
+          <p className="text-muted-foreground font-bold">مراقبة مشاريع المقاولات الميدانية</p>
         </div>
-        <button 
-          onClick={() => alert('قريباً: إضافة مشروع جديد')}
-          className="btn-primary flex items-center justify-center gap-2 px-6 py-3 rounded-2xl shadow-gold"
-        >
-          <Plus className="w-5 h-5" />
-          <span>إضافة مشروع</span>
-        </button>
+        {isAdmin && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="btn-primary flex items-center justify-center gap-2 px-8 py-4 rounded-2xl shadow-gold font-black transition-all hover:scale-105 active:scale-95"
+          >
+            <Plus className="w-6 h-6" />
+            <span>مشروع جديد</span>
+          </button>
+        )}
       </div>
 
-      <div className="relative group">
-        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+      <div className="relative mb-10">
+        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground" />
         <input
           type="text"
-          placeholder="ابحث عن مشروع أو موقع..."
+          placeholder="ابحث عن مشروع برقم الكود أو الاسم..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-card border-2 border-border focus:border-primary rounded-2xl py-4 pr-12 pl-4 outline-none transition-all shadow-sm"
+          className="w-full bg-card border-2 border-border focus:border-primary rounded-3xl py-5 pr-14 pl-6 outline-none transition-all shadow-lg font-bold"
         />
       </div>
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-muted-foreground animate-pulse">جاري تحميل المشاريع...</p>
+      {isLoading && projects.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-6">
+          <Loader2 className="w-16 h-16 text-primary animate-spin" />
+          <p className="text-muted-foreground font-black animate-pulse">جاري تحميل قاعدة بيانات المواقع...</p>
         </div>
       ) : filteredProjects.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredProjects.map((project) => (
             <div 
               key={project.id}
-              className="glass-card group hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 overflow-hidden cursor-pointer"
+              className="glass-card group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden"
             >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500">
-                    <Building className="w-6 h-6" />
+              <div className="p-8">
+                <div className="flex items-start justify-between mb-8">
+                  <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-700">
+                    <Building className="w-8 h-8" />
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    project.status === 'active' ? 'bg-success/10 text-success' : 'bg-muted/10 text-muted-foreground'
-                  }`}>
-                    {project.status === 'active' ? 'نشط' : 'مكتمل'}
+                  <div className={cn(
+                    "px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest",
+                    project.status === 'active' ? 'bg-success/10 text-success' : 'bg-muted/20 text-muted-foreground'
+                  )}>
+                    {project.status === 'active' ? 'موقع نشط' : 'مكتمل'}
                   </div>
                 </div>
 
-                <h3 className="text-lg font-black text-foreground mb-1 group-hover:text-primary transition-colors">
+                <h3 className="text-2xl font-black text-foreground mb-2 group-hover:text-primary transition-colors">
                   {project.name}
                 </h3>
+                <p className="text-sm font-bold text-muted-foreground mb-6 uppercase tracking-widest">{project.code}</p>
                 
-                <div className="flex items-center gap-2 text-muted-foreground text-xs mb-4">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>{project.location || 'غير محدد'}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">الميزانية</p>
-                    <p className="text-sm font-black text-foreground">
-                      {project.budget?.toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">LYD</span>
-                    </p>
+                <div className="space-y-6 pt-6 border-t border-border/30">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase mb-1">الميزانية المرصودة</p>
+                      <p className="text-xl font-black text-foreground">
+                        {formatCurrency(project.budget || 0, project.currency)}
+                      </p>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-[10px] font-black text-error uppercase mb-1">المصروفات الحالية</p>
+                      <p className="text-xl font-black text-error">
+                        0.00
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">المصاريف</p>
-                    <p className="text-sm font-black text-error">
-                      0 <span className="text-[10px] font-normal text-muted-foreground">LYD</span>
-                    </p>
+
+                  <div className="w-full h-3 bg-muted/30 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary shadow-gold animate-pulse" style={{ width: '0%' }} />
                   </div>
                 </div>
               </div>
               
-              <div className="bg-muted/30 px-6 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground">تحديث منذ يومين</span>
+              <div className="bg-card/50 backdrop-blur-sm px-8 py-4 flex items-center justify-between border-t border-border/20">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-[10px] font-black text-muted-foreground">تم التحديث مؤخراً</span>
                 </div>
-                <div className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                <button className="text-primary font-black text-xs hover:underline">التفاصيل</button>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="glass-card flex flex-col items-center justify-center py-20 px-6 text-center">
-          <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center mb-6">
-            <Building className="w-10 h-10 text-muted-foreground/30" />
+        <div className="glass-card flex flex-col items-center justify-center py-32 px-10 text-center rounded-[3rem]">
+          <div className="w-24 h-24 rounded-full bg-primary/5 flex items-center justify-center mb-8 border border-primary/10">
+            <Building className="w-12 h-12 text-primary/20" />
           </div>
-          <h3 className="text-xl font-black text-foreground mb-2">لا يوجد مشاريع حالياً</h3>
-          <p className="text-muted-foreground max-w-xs mx-auto mb-8">ابدأ بإضافة أول مشروع لمتابعة العمليات الميدانية.</p>
-          <button 
-            onClick={() => alert('قريباً: إضافة مشروع جديد')}
-            className="btn-primary px-8 py-3 rounded-xl shadow-gold"
-          >
-            أضف مشروعك الأول
-          </button>
+          <h3 className="text-3xl font-black text-foreground mb-4">لا يوجد مواقع بناء</h3>
+          <p className="text-muted-foreground max-w-sm mx-auto mb-10 font-bold leading-relaxed">ابدأ بإضافة مشاريعك الأولى لمتابعة صرف الميزانيات والعهـد من المواقع مباشرة.</p>
+          {isAdmin && (
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="btn-primary px-10 py-5 rounded-2xl shadow-gold font-black"
+            >
+              أضف مشروعك الأول
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Add Project Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-background/80 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="w-full max-w-2xl bg-card border-2 border-white/10 rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-10">
+              <div className="flex justify-between items-center mb-10">
+                <div>
+                  <h2 className="text-3xl font-black text-foreground">مشروع إنشائي جديد</h2>
+                  <p className="text-muted-foreground font-bold">أدخل تفاصيل موقع العمل والميزانية</p>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center hover:bg-error/10 hover:text-error transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-muted-foreground mr-2">اسم المشروع</label>
+                    <input 
+                      required
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      className="w-full bg-muted/30 border-2 border-border focus:border-primary rounded-2xl py-4 px-6 outline-none font-bold"
+                      placeholder="مثال: برج الذهب"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-muted-foreground mr-2">كود المشروع</label>
+                    <input 
+                      required
+                      value={formData.code}
+                      onChange={e => setFormData({...formData, code: e.target.value})}
+                      className="w-full bg-muted/30 border-2 border-border focus:border-primary rounded-2xl py-4 px-6 outline-none font-bold"
+                      placeholder="مثال: PJ-2026-001"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-muted-foreground mr-2">الميزانية التقديرية</label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <input 
+                        required
+                        type="number"
+                        value={formData.budget}
+                        onChange={e => setFormData({...formData, budget: Number(e.target.value)})}
+                        className="w-full bg-muted/30 border-2 border-border focus:border-primary rounded-2xl py-4 px-14 outline-none font-bold"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-muted-foreground mr-2">العملة</label>
+                    <select 
+                      value={formData.currency}
+                      onChange={e => setFormData({...formData, currency: e.target.value})}
+                      className="w-full bg-muted/30 border-2 border-border focus:border-primary rounded-2xl py-4 px-6 outline-none font-bold appearance-none"
+                    >
+                      <option value="LYD">دينار ليبي (LYD)</option>
+                      <option value="USD">دولار أمريكي (USD)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-muted-foreground mr-2">وصف المشروع / الموقع</label>
+                  <textarea 
+                    value={formData.description}
+                    onChange={e => setFormData({...formData, description: e.target.value})}
+                    className="w-full bg-muted/30 border-2 border-border focus:border-primary rounded-2xl py-4 px-6 outline-none font-bold min-h-[120px]"
+                    placeholder="تفاصيل موقع العمل..."
+                  />
+                </div>
+
+                <div className="pt-6">
+                  <button type="submit" disabled={isLoading} className="w-full btn-primary py-5 rounded-2xl font-black text-lg shadow-gold flex items-center justify-center gap-3">
+                    {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Building className="w-6 h-6" />}
+                    <span>تأكيد تسجيل المشروع</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       )}
     </div>

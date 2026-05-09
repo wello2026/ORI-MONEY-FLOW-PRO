@@ -36,30 +36,45 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   fetchAccounts: async () => {
     set({ isLoading: true, error: null })
     const isOnline = useSyncStore.getState().isOnline
+    const user = useAuthStore.getState().user
     
     try {
       // 1. Fetch from Local DB (Dexie) first
-      const localData = await db.accounts.orderBy('created_at').reverse().toArray()
+      let localData = await db.accounts.orderBy('created_at').reverse().toArray()
+      
+      // Filter local data for employees
+      if (user?.role === 'employee') {
+        localData = localData.filter(a => (a as any).owner_id === user.id)
+      }
+      
       set({ accounts: localData as unknown as Account[], isLoading: false })
 
       // 2. If online, sync from Supabase
       if (isOnline) {
-        const { data, error } = await supabase
-          .from('accounts')
-          .select('*')
-          .order('created_at', { ascending: false })
+        let query = supabase.from('accounts').select('*')
+        
+        // Filter remote data for employees
+        if (user?.role === 'employee') {
+          query = query.eq('owner_id', user.id)
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false })
 
         if (error) {
           console.error(`خطأ في جلب الحسابات من الخادم: ${error.message}`)
         } else if (data) {
-          const localAccounts = await db.accounts.toArray()
+          const allLocalAccounts = await db.accounts.toArray()
           const pendingQueue = await db.sync_queue.filter(q => q.table === 'accounts').toArray()
           const pendingIds = new Set(pendingQueue.map(q => (q.data as any).id))
           const remoteIds = new Set(data.map(a => a.id))
 
           // 1. Delete dead local rows (rejected by server, not in sync queue)
-          const deadIds = localAccounts
-            .filter(a => !remoteIds.has(a.id) && !pendingIds.has(a.id))
+          // Only delete rows that belong to the user or if user is admin
+          const deadIds = allLocalAccounts
+            .filter(a => {
+              if (user?.role === 'employee' && (a as any).owner_id !== user.id) return false
+              return !remoteIds.has(a.id) && !pendingIds.has(a.id)
+            })
             .map(a => a.id)
           
           if (deadIds.length > 0) {
@@ -69,14 +84,20 @@ export const useAccountStore = create<AccountState>((set, get) => ({
           // 2. Merge remote data
           const mergedData = data.map(remoteAcc => {
             if (pendingIds.has(remoteAcc.id)) {
-               return localAccounts.find(a => a.id === remoteAcc.id) || { ...remoteAcc, synced: true }
+               return allLocalAccounts.find(a => a.id === remoteAcc.id) || { ...remoteAcc, synced: true }
             }
             return { ...remoteAcc, synced: true }
           })
 
           await db.accounts.bulkPut(mergedData as any)
-          const finalData = await db.accounts.orderBy('created_at').reverse().toArray()
-          set({ accounts: finalData as unknown as Account[] })
+          
+          // Re-fetch filtered data
+          let finalLocalData = await db.accounts.orderBy('created_at').reverse().toArray()
+          if (user?.role === 'employee') {
+            finalLocalData = finalLocalData.filter(a => (a as any).owner_id === user.id)
+          }
+          
+          set({ accounts: finalLocalData as unknown as Account[] })
         }
       }
     } catch (err: any) {
@@ -119,6 +140,8 @@ export const useAccountStore = create<AccountState>((set, get) => ({
       type: accountData.type,
       balance: Math.round((accountData.balance ?? 0) * 100) / 100,
       currency: accountData.currency || 'LYD',
+      parent_id: (accountData as any).parent_id || null,
+      owner_id: (accountData as any).owner_id || null,
       status: accountData.status || 'active',
       notes: accountData.notes || null,
       created_by: validCreatedBy,

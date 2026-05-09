@@ -23,11 +23,14 @@ export interface Account {
   type: AccountType
   balance: number
   currency: string
+  parent_id?: string
+  owner_id?: string
   status: AccountStatus
   notes?: string
   created_by: string
   created_at: string
   updated_at: string
+  children?: Account[]
 }
 
 export type TransactionType = 'deposit' | 'withdrawal' | 'expense' | 'income' | 'salary' | 'custody' | 'adjustment' | 'settlement'
@@ -38,13 +41,16 @@ export interface Transaction {
   reference: string
   type: TransactionType
   amount: number
+  currency?: string
+  exchange_rate?: number
   description?: string
   account_id: string
+  project_id?: string
   offset_account_id?: string
   created_by: string
   approved_by?: string
   status: TransactionStatus
-  attachments?: Record<string, unknown>
+  attachments?: string[] // URLs to images
   metadata?: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -62,6 +68,9 @@ export interface Transfer {
   source_account_id: string
   destination_account_id: string
   amount: number
+  source_currency?: string
+  destination_currency?: string
+  exchange_rate?: number
   description?: string
   status: TransferStatus
   created_by: string
@@ -71,6 +80,16 @@ export interface Transfer {
   destination_account?: Account
   creator?: User
   approver?: User
+}
+
+export interface Project {
+  id: string
+  name: string
+  location?: string
+  status: 'active' | 'completed' | 'on_hold'
+  budget: number
+  created_at: string
+  updated_at: string
 }
 
 export type ApprovalEntityType = 'transaction' | 'transfer' | 'account' | 'employee'
