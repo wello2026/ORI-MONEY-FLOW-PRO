@@ -95,32 +95,32 @@ export default function ReportsPage() {
       </div>
 
       {/* Currency Totals Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <div className="glass-card p-8 relative overflow-hidden border-b-4 border-primary">
-          <div className="absolute top-0 right-0 p-4 opacity-5"><Wallet className="w-24 h-24" /></div>
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">إجمالي الحركة (دينار ليبي)</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div className="glass-card p-6 relative overflow-hidden border-b-4 border-primary">
+          <div className="absolute top-0 right-0 p-4 opacity-5"><Wallet className="w-16 h-16" /></div>
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">السيولة (LYD)</p>
           <div className="flex justify-between items-end">
             <div>
-              <p className="text-3xl font-black text-foreground">{formatCurrency(totals.LYD.income - totals.LYD.expense, 'LYD')}</p>
-              <p className="text-xs font-bold text-muted-foreground mt-1">الصافي المتاح حالياً</p>
+              <p className="text-2xl sm:text-3xl font-black text-foreground">{formatCurrency(totals.LYD.income - totals.LYD.expense, 'LYD')}</p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-1">الصافي المتاح حالياً</p>
             </div>
             <div className="text-left">
-              <p className="text-xs font-bold text-success">+{formatCurrency(totals.LYD.income, 'LYD')}</p>
-              <p className="text-xs font-bold text-error">-{formatCurrency(totals.LYD.expense, 'LYD')}</p>
+              <p className="text-[10px] font-bold text-success">+{formatCurrency(totals.LYD.income, 'LYD')}</p>
+              <p className="text-[10px] font-bold text-error">-{formatCurrency(totals.LYD.expense, 'LYD')}</p>
             </div>
           </div>
         </div>
-        <div className="glass-card p-8 relative overflow-hidden border-b-4 border-info">
-          <div className="absolute top-0 right-0 p-4 opacity-5"><TrendingUp className="w-24 h-24" /></div>
-          <p className="text-[10px] font-black text-info uppercase tracking-widest mb-2">إجمالي الحركة (دولار أمريكي)</p>
+        <div className="glass-card p-6 relative overflow-hidden border-b-4 border-info">
+          <div className="absolute top-0 right-0 p-4 opacity-5"><TrendingUp className="w-16 h-16" /></div>
+          <p className="text-[10px] font-black text-info uppercase tracking-widest mb-2">السيولة (USD)</p>
           <div className="flex justify-between items-end">
             <div>
-              <p className="text-3xl font-black text-foreground">{formatCurrency(totals.USD.income - totals.USD.expense, 'USD')}</p>
-              <p className="text-xs font-bold text-muted-foreground mt-1">الصافي المتاح حالياً</p>
+              <p className="text-2xl sm:text-3xl font-black text-foreground">{formatCurrency(totals.USD.income - totals.USD.expense, 'USD')}</p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-1">الصافي المتاح حالياً</p>
             </div>
             <div className="text-left">
-              <p className="text-xs font-bold text-success">+{formatCurrency(totals.USD.income, 'USD')}</p>
-              <p className="text-xs font-bold text-error">-{formatCurrency(totals.USD.expense, 'USD')}</p>
+              <p className="text-[10px] font-bold text-success">+{formatCurrency(totals.USD.income, 'USD')}</p>
+              <p className="text-[10px] font-bold text-error">-{formatCurrency(totals.USD.expense, 'USD')}</p>
             </div>
           </div>
         </div>
@@ -192,47 +192,49 @@ function ReportButton({ title, desc, icon, color, onClick }: any) {
 }
 
 function renderReport(type: ReportType, data: any) {
-  const { filteredTransactions, accounts, projects } = data
+  const { filteredTransactions, accounts, projects, transfers, totals } = data
 
   switch (type) {
     case 'daily':
       return (
         <div className="space-y-6">
-          <div className="flex items-center justify-between border-b pb-6 border-border/50">
+          <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-6 border-border/50 gap-4">
              <h2 className="text-2xl font-black">تقرير اليومية التفصيلي</h2>
-             <div className="text-left">
+             <div className="text-right md:text-left">
                <p className="text-[10px] font-black text-muted-foreground uppercase">تاريخ التقرير</p>
                <p className="font-bold">{formatDate(new Date().toISOString())}</p>
              </div>
           </div>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="p-4 text-right font-black">المرجع</th>
-                <th className="p-4 text-right font-black">البيان</th>
-                <th className="p-4 text-right font-black">الحساب</th>
-                <th className="p-4 text-right font-black">المبلغ</th>
-                <th className="p-4 text-right font-black">الحالة</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/30">
-              {filteredTransactions.map((t: any) => (
-                <tr key={t.id} className="hover:bg-primary/5 transition-colors">
-                  <td className="p-4 font-bold">{t.reference}</td>
-                  <td className="p-4 font-bold text-muted-foreground">{t.description || t.type}</td>
-                  <td className="p-4 font-bold">{accounts.find((a: any) => a.id === t.account_id)?.name}</td>
-                  <td className={cn("p-4 font-black", ['deposit', 'income'].includes(t.type) ? "text-success" : "text-error")}>
-                    {formatCurrency(t.amount, accounts.find((a: any) => a.id === t.account_id)?.currency)}
-                  </td>
-                  <td className="p-4">
-                     <span className={cn("px-3 py-1 rounded-full text-[10px] font-black", t.status === 'approved' ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
-                       {t.status === 'approved' ? 'معتمد' : 'معلق'}
-                     </span>
-                  </td>
+          <div className="overflow-x-auto -mx-8 px-8">
+            <table className="w-full text-sm min-w-[600px]">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="p-4 text-right font-black">المرجع</th>
+                  <th className="p-4 text-right font-black">البيان</th>
+                  <th className="p-4 text-right font-black">الحساب</th>
+                  <th className="p-4 text-right font-black">المبلغ</th>
+                  <th className="p-4 text-right font-black">الحالة</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {filteredTransactions.map((t: any) => (
+                  <tr key={t.id} className="hover:bg-primary/5 transition-colors">
+                    <td className="p-4 font-bold max-w-[120px] truncate" title={t.reference}>{t.reference}</td>
+                    <td className="p-4 font-bold text-muted-foreground">{t.description || t.type}</td>
+                    <td className="p-4 font-bold">{accounts.find((a: any) => a.id === t.account_id)?.name}</td>
+                    <td className={cn("p-4 font-black", ['deposit', 'income'].includes(t.type) ? "text-success" : "text-error")}>
+                      {formatCurrency(t.amount, accounts.find((a: any) => a.id === t.account_id)?.currency)}
+                    </td>
+                    <td className="p-4">
+                       <span className={cn("px-3 py-1 rounded-full text-[10px] font-black", t.status === 'approved' ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+                         {t.status === 'approved' ? 'معتمد' : 'معلق'}
+                       </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )
     case 'projects':
@@ -245,6 +247,7 @@ function renderReport(type: ReportType, data: any) {
             {projects.map((p: any) => {
                const pTxs = filteredTransactions.filter((t: any) => (t as any).project_id === p.id && t.status === 'approved')
                const totalSpent = pTxs.filter((t: any) => ['expense', 'withdrawal', 'salary'].includes(t.type)).reduce((s: any, t: any) => s + t.amount, 0)
+               const progress = Math.min((totalSpent / (p.budget || 1)) * 100, 100)
                return (
                  <div key={p.id} className="p-6 rounded-3xl bg-card border-2 border-border/50 hover:border-primary/30 transition-all">
                     <div className="flex justify-between items-start mb-6">
@@ -257,12 +260,15 @@ function renderReport(type: ReportType, data: any) {
                     <div className="space-y-4">
                        <div className="flex justify-between items-center">
                          <span className="text-sm font-bold text-muted-foreground">إجمالي المصاريف الميدانية</span>
-                         <span className="text-xl font-black text-error">{formatCurrency(totalSpent)}</span>
+                         <span className="text-xl font-black text-error">{formatCurrency(totalSpent, p.currency)}</span>
                        </div>
                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-primary" style={{ width: '45%' }} />
+                          <div className={cn("h-full transition-all duration-1000", progress > 90 ? "bg-error" : "bg-primary")} style={{ width: `${progress}%` }} />
                        </div>
-                       <p className="text-[10px] font-black text-muted-foreground uppercase text-center">{pTxs.length} عملية صرف معتمدة</p>
+                       <div className="flex justify-between text-[10px] font-black text-muted-foreground uppercase">
+                         <span>{pTxs.length} عملية صرف</span>
+                         <span>استهلاك {progress.toFixed(1)}%</span>
+                       </div>
                     </div>
                  </div>
                )
@@ -274,37 +280,138 @@ function renderReport(type: ReportType, data: any) {
       return (
         <div className="space-y-6">
           <h2 className="text-2xl font-black border-b pb-6 border-border/50">كشف عُهد المهندسين</h2>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="p-4 text-right font-black">المهندس / الحساب</th>
-                <th className="p-4 text-right font-black">الكود</th>
-                <th className="p-4 text-right font-black">الرصيد المتاح</th>
-                <th className="p-4 text-right font-black">العملة</th>
-                <th className="p-4 text-right font-black">الحالة</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/30">
-              {accounts.filter((a: any) => a.type === 'cashbox' || a.type === 'employee').map((a: any) => (
-                <tr key={a.id}>
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary"><User className="w-5 h-5" /></div>
-                      <span className="font-black">{a.name}</span>
-                    </div>
-                  </td>
-                  <td className="p-4 font-bold text-muted-foreground">{a.code}</td>
-                  <td className="p-4 font-black text-lg">{formatCurrency(a.balance, a.currency)}</td>
-                  <td className="p-4 font-bold">{a.currency}</td>
-                  <td className="p-4">
-                     <span className={cn("px-3 py-1 rounded-full text-[10px] font-black", a.status === 'active' ? "bg-success/10 text-success" : "bg-muted/50 text-muted-foreground")}>
-                       {a.status === 'active' ? 'نشط' : 'متوقف'}
-                     </span>
-                  </td>
+          <div className="overflow-x-auto -mx-8 px-8">
+            <table className="w-full text-sm min-w-[600px]">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="p-4 text-right font-black">المهندس / الحساب</th>
+                  <th className="p-4 text-right font-black">الكود</th>
+                  <th className="p-4 text-right font-black">الرصيد المتاح</th>
+                  <th className="p-4 text-right font-black">العملة</th>
+                  <th className="p-4 text-right font-black">الحالة</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {accounts.filter((a: any) => a.type === 'cashbox' || a.type === 'employee').map((a: any) => (
+                  <tr key={a.id}>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary"><User className="w-5 h-5" /></div>
+                        <span className="font-black">{a.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 font-bold text-muted-foreground">{a.code}</td>
+                    <td className="p-4 font-black text-lg">{formatCurrency(a.balance, a.currency)}</td>
+                    <td className="p-4 font-bold">{a.currency}</td>
+                    <td className="p-4">
+                       <span className={cn("px-3 py-1 rounded-full text-[10px] font-black", a.status === 'active' ? "bg-success/10 text-success" : "bg-muted/50 text-muted-foreground")}>
+                         {a.status === 'active' ? 'نشط' : 'متوقف'}
+                       </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )
+    case 'transfers':
+      return (
+        <div className="space-y-6">
+           <h2 className="text-2xl font-black border-b pb-6 border-border/50">سجل تحويلات الخزائن</h2>
+           <div className="overflow-x-auto -mx-8 px-8">
+            <table className="w-full text-sm min-w-[600px]">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="p-4 text-right font-black">المرجع</th>
+                  <th className="p-4 text-right font-black">من</th>
+                  <th className="p-4 text-right font-black">إلى</th>
+                  <th className="p-4 text-right font-black">المبلغ</th>
+                  <th className="p-4 text-right font-black">التاريخ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {transfers.map((t: any) => (
+                  <tr key={t.id}>
+                    <td className="p-4 font-bold">{t.reference}</td>
+                    <td className="p-4 font-black text-error">{accounts.find((a: any) => a.id === t.source_account_id)?.name}</td>
+                    <td className="p-4 font-black text-success">{accounts.find((a: any) => a.id === t.destination_account_id)?.name}</td>
+                    <td className="p-4 font-black text-lg">{formatCurrency(t.amount, t.source_currency)}</td>
+                    <td className="p-4 text-xs font-bold text-muted-foreground">{formatDate(t.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )
+    case 'cashflow':
+      return (
+        <div className="space-y-8">
+           <h2 className="text-2xl font-black border-b pb-6 border-border/50">تحليل التدفق النقدي</h2>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="p-8 rounded-3xl bg-success/5 border-2 border-success/20">
+                 <h4 className="font-black text-success mb-4 flex items-center gap-2"><TrendingUp /> إجمالي التدفقات الداخلة</h4>
+                 <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                       <span className="font-bold">بالدينار الليبي</span>
+                       <span className="text-2xl font-black">{formatCurrency(totals.LYD.income, 'LYD')}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                       <span className="font-bold">بالدولار الأمريكي</span>
+                       <span className="text-2xl font-black">{formatCurrency(totals.USD.income, 'USD')}</span>
+                    </div>
+                 </div>
+              </div>
+              <div className="p-8 rounded-3xl bg-error/5 border-2 border-error/20">
+                 <h4 className="font-black text-error mb-4 flex items-center gap-2"><TrendingDown /> إجمالي التدفقات الخارجة</h4>
+                 <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                       <span className="font-bold">بالدينار الليبي</span>
+                       <span className="text-2xl font-black">{formatCurrency(totals.LYD.expense, 'LYD')}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                       <span className="font-bold">بالدولار الأمريكي</span>
+                       <span className="text-2xl font-black">{formatCurrency(totals.USD.expense, 'USD')}</span>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )
+    case 'trial_balance':
+      return (
+        <div className="space-y-6">
+           <h2 className="text-2xl font-black border-b pb-6 border-border/50">ميزان المراجعة التحليلي</h2>
+           <div className="overflow-x-auto -mx-8 px-8">
+            <table className="w-full text-sm min-w-[700px]">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="p-4 text-right font-black">كود الحساب</th>
+                  <th className="p-4 text-right font-black">اسم الحساب</th>
+                  <th className="p-4 text-right font-black">مدين (وارد)</th>
+                  <th className="p-4 text-right font-black">دائن (صادر)</th>
+                  <th className="p-4 text-right font-black">الرصيد النهائي</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {accounts.map((a: any) => {
+                  const txs = filteredTransactions.filter((t: any) => t.account_id === a.id && t.status === 'approved')
+                  const debit = txs.filter((t: any) => ['deposit', 'income'].includes(t.type)).reduce((s: any, t: any) => s + t.amount, 0)
+                  const credit = txs.filter((t: any) => ['withdrawal', 'expense', 'salary'].includes(t.type)).reduce((s: any, t: any) => s + t.amount, 0)
+                  return (
+                    <tr key={a.id} className={cn(a.parent_id ? "opacity-80" : "bg-primary/5 font-black")}>
+                      <td className="p-4 font-mono">{a.code}</td>
+                      <td className="p-4">{a.name}</td>
+                      <td className="p-4 text-success">{formatCurrency(debit, a.currency)}</td>
+                      <td className="p-4 text-error">{formatCurrency(credit, a.currency)}</td>
+                      <td className="p-4 font-black">{formatCurrency(a.balance, a.currency)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )
     default:

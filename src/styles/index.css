@@ -646,4 +646,62 @@
   .will-change-transform {
     will-change: transform;
   }
+
+  /* Mobile Data Visibility & Responsiveness Fixes */
+  @media (max-width: 640px) {
+    .glass-card {
+      padding: 1rem !important;
+    }
+    
+    .text-4xl {
+      font-size: 1.875rem !important; /* 30px */
+      line-height: 2.25rem !important;
+    }
+    
+    .text-3xl {
+      font-size: 1.5rem !important; /* 24px */
+    }
+
+    .kpi-card h3 {
+      font-size: 1.5rem !important;
+    }
+    
+    table {
+      font-size: 0.75rem !important;
+    }
+
+    th, td {
+      padding: 0.75rem 0.5rem !important;
+    }
+  }
+
+  .overflow-x-auto {
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.2) transparent;
+  }
+
+  /* Horizontal Scroll Shadow Indicator */
+  .overflow-x-auto::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to left, rgba(255,255,255,0.5), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .overflow-x-auto:hover::after {
+    opacity: 1;
+  }
+
+  /* Prevent number overflow */
+  .font-black, .font-bold {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
 }
