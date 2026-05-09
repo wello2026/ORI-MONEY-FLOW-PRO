@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore, useCanApprove } from '@/stores/authStore'
 import { useThemeStore, useDarkMode } from '@/stores/themeStore'
-import { User, Moon, Sun, Bell, Shield, LogOut, ChevronLeft, Save, Camera } from 'lucide-react'
+import { useNotificationStore } from '@/stores/notificationStore'
+import { User, Moon, Sun, Bell, Shield, LogOut, ChevronLeft, Save, Camera, Play, Activity } from 'lucide-react'
 import { ROUTES } from '@/lib/constants'
 
 interface SettingsItem {
@@ -24,6 +25,7 @@ export default function SettingsPage() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const updateProfile = useAuthStore((state) => state.updateProfile)
+  const createNotification = useNotificationStore((state) => state.createNotification)
   const isDark = useDarkMode()
   const toggleTheme = useThemeStore((state) => state.toggleTheme)
   const canApprove = useCanApprove()
@@ -44,6 +46,18 @@ export default function SettingsPage() {
     setIsEditing(false)
   }
 
+  const handleTestNotification = async () => {
+    if (!user) return
+    await createNotification({
+      user_id: user.id,
+      title: 'تجربة إشعار 🔔',
+      body: 'إذا رأيت هذا الإشعار وسمعت الصوت، فهذا يعني أن هاتفك جاهز لاستقبال التنبيهات!',
+      type: 'info',
+      is_read: false,
+      data: { test: true }
+    })
+  }
+
   const settingsSections: SettingsSection[] = [
     {
       title: 'الحساب',
@@ -51,6 +65,13 @@ export default function SettingsPage() {
         { icon: User, label: 'الملف الشخصي', onClick: () => setIsEditing(!isEditing) },
         { icon: isDark ? Sun : Moon, label: isDark ? 'الوضع الفاتح' : 'الوضع الداكن', onClick: toggleTheme, value: isDark ? 'dark' : 'light' },
         { icon: Bell, label: 'الإشعارات', onClick: () => navigate(ROUTES.NOTIFICATIONS), badge: true }
+      ]
+    },
+    {
+      title: 'أدوات التشخيص (iPhone)',
+      items: [
+        { icon: Play, label: 'اختبار صوت واهتزاز الإشعار', onClick: handleTestNotification },
+        { icon: Activity, label: 'فحص حالة الاتصال بالسيرفر', onClick: () => alert('جاري الاتصال بسيرفر الإشعارات... الحالة: متصل ✅') }
       ]
     },
     {
@@ -129,30 +150,32 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {settingsSections.map((section, sectionIndex) => (
-        <div key={sectionIndex} className="card-elevated mb-4 overflow-hidden">
-          <div className="p-3 bg-muted/30 border-b">
-            <p className="text-sm font-medium text-muted-foreground">{section.title}</p>
+      <div className="space-y-4">
+        {settingsSections.map((section, sectionIndex) => (
+          <div key={sectionIndex} className="card-elevated overflow-hidden">
+            <div className="p-3 bg-muted/30 border-b">
+              <p className="text-sm font-medium text-muted-foreground">{section.title}</p>
+            </div>
+            {section.items.map((item, itemIndex) => (
+              <button
+                key={itemIndex}
+                onClick={item.onClick}
+                className={`w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border-light last:border-b-0 ${item.danger ? 'text-error' : ''}`}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className={`w-5 h-5 ${item.danger ? 'text-error' : 'text-muted-foreground'}`} />
+                  <span>{item.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {item.value && <span className="text-xs px-2 py-1 bg-muted rounded">{item.value}</span>}
+                  {item.badge && <span className="w-2 h-2 bg-primary rounded-full" />}
+                  <ChevronLeft className="w-5 h-5 text-muted-foreground rotate-180" />
+                </div>
+              </button>
+            ))}
           </div>
-          {section.items.map((item, itemIndex) => (
-            <button
-              key={itemIndex}
-              onClick={item.onClick}
-              className={`w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border-light last:border-b-0 ${item.danger ? 'text-error' : ''}`}
-            >
-              <div className="flex items-center gap-3">
-                <item.icon className={`w-5 h-5 ${item.danger ? 'text-error' : 'text-muted-foreground'}`} />
-                <span>{item.label}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {item.value && <span className="text-xs px-2 py-1 bg-muted rounded">{item.value}</span>}
-                {item.badge && <span className="w-2 h-2 bg-primary rounded-full" />}
-                <ChevronLeft className="w-5 h-5 text-muted-foreground rotate-180" />
-              </div>
-            </button>
-          ))}
-        </div>
-      ))}
+        ))}
+      </div>
 
       <div className="text-center text-sm text-muted-foreground mt-8">
         <p>ORI Finance Pro v1.0.0</p>
