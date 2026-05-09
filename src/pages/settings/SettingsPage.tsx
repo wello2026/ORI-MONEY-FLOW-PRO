@@ -155,15 +155,26 @@ export default function SettingsPage() {
         {/* Enable Audio Context Button for iOS */}
         <button 
           onClick={() => {
-            // صوت تنبيه احترافي قصير جداً
-            const BEEP = 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFhYAAAAbm90aWZpY2F0aW9uAFUAbAB0AHIAYQAgAE0AbwBkAGUAcgBuACAAUABpAG4AZwAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6AAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAADwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-            const audio = new Audio(BEEP);
-            audio.play()
-              .then(() => alert('تم تفعيل الصوت بنجاح! 🔊'))
-              .catch((err) => {
-                console.error(err);
-                alert('خطأ تقني: ' + err.message);
-              });
+            try {
+              const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+              const context = new AudioContext();
+              const oscillator = context.createOscillator();
+              const gainNode = context.createGain();
+              
+              oscillator.connect(gainNode);
+              gainNode.connect(context.destination);
+              
+              oscillator.type = 'sine';
+              oscillator.frequency.setValueAtTime(880, context.currentTime);
+              gainNode.gain.setValueAtTime(0.1, context.currentTime);
+              
+              oscillator.start();
+              oscillator.stop(context.currentTime + 0.2);
+              
+              alert('تم توليد إشارة الصوت بنجاح! 🔊');
+            } catch (err: any) {
+              alert('فشل توليد الصوت: ' + err.message);
+            }
           }}
           className="w-full card-elevated p-4 flex items-center justify-between gap-3 bg-primary/5 border-primary/20 hover:bg-primary/10 transition-all group"
         >
