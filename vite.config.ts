@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
-import fs from 'fs'
 
 export default defineConfig({
   plugins: [
@@ -49,20 +48,7 @@ export default defineConfig({
           }
         ]
       }
-    }),
-    {
-      name: 'generate-404',
-      closeBundle() {
-        const distPath = path.resolve(__dirname, 'dist')
-        const indexPath = path.resolve(distPath, 'index.html')
-        const fallbackPath = path.resolve(distPath, '404.html')
-        
-        if (fs.existsSync(indexPath)) {
-          fs.copyFileSync(indexPath, fallbackPath)
-          console.log('✅ Generated 404.html from index.html for Cloudflare Pages SPA fallback')
-        }
-      }
-    }
+    })
   ],
   resolve: {
     alias: {
