@@ -1,0 +1,28 @@
+name = "ori-finance-erp"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "./dist"
+
+# Environment variables exposed to the app (via VITE_ prefix)
+env:
+  PREVIEW:
+    vars:
+      VITE_APP_NAME: "ORI Finance Pro (Preview)"
+  PRODUCTION:
+    vars:
+      VITE_APP_NAME: "ORI Financial Operations ERP"
+
+# KV namespaces for cache/offline data
+# kv_namespaces:
+#   - binding = "CACHE"
+#     id = "your-kv-namespace-id"
+
+# Routes configuration
+routes:
+  - pattern: "ori-finance.example.com"
+    zone_name: "example.com"
+    insecure_tls: false
+
+# Dev configuration
+dev:
+  port: 3000
+  local_protocol: https

@@ -2,7 +2,7 @@ export const APP_NAME = import.meta.env.VITE_APP_NAME || 'ORI Finance Pro'
 
 export const DEFAULT_CURRENCY = 'LYD'
 export const DEFAULT_CURRENCY_SYMBOL = 'د.ل'
-export const VAPID_PUBLIC_KEY = 'BKJccS-o4FBHCZdizTp7pLx7bje1ATyH8HEmOz6IADkQwzOgVsp41m3AEjmoJSeW8zgFrvrFJkitNKyA5m_F0mc'
+export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
 
 export const ACCOUNT_TYPES = [
   { value: 'cashbox', label: 'صندوق', icon: 'wallet' },
@@ -73,6 +73,17 @@ export const ROUTES = {
   LOGIN: '/login',
   RESET_PASSWORD: '/reset-password',
   DASHBOARD: '/dashboard',
+  TREASURIES: '/treasuries',
+  TREASURY_DETAIL: '/treasuries/:id',
+  TREASURY_TRANSFER: '/treasuries/transfer',
+  JOURNAL: '/journal',
+  JOURNAL_NEW: '/journal/new',
+  JOURNAL_DETAIL: '/journal/:id',
+  ACCOUNTING_REPORTS: '/reports/accounting',
+  PARTNERS: '/partners',
+  PARTNER_DETAIL: '/partners/:id',
+  SUPPLIERS: '/suppliers',
+  SUPPLIER_DETAIL: '/suppliers/:id',
   ACCOUNTS: '/accounts',
   ACCOUNT_DETAIL: '/accounts/:id',
   ACCOUNT_NEW: '/accounts/new',
@@ -92,6 +103,10 @@ export const ROUTES = {
   USERS: '/users',
   ROLES: '/roles',
   PROJECTS: '/projects',
+  PRODUCTS: '/products',
+  PRODUCT_DETAIL: '/products/:id',
+  EXPENSES: '/expenses',
+  EXPENSE_DETAIL: '/expenses/:id',
   TEST: '/test',
   SETTINGS: '/settings',
   NOTIFICATIONS: '/notifications'

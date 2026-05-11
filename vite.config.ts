@@ -18,30 +18,31 @@ export default defineConfig({
         injectionPoint: 'self.__WB_MANIFEST',
       },
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'icons.svg', 'icons/icon-192x192.svg', 'icons/icon-512x512.svg', 'icons/icon-maskable.svg'],
       manifest: {
-        name: 'ORI Finance Pro',
-        short_name: 'ORI Finance',
-        description: 'Premium Arabic Financial Management System',
+        name: 'ORI Financial Operations ERP',
+        short_name: 'ORI ERP',
+        description: 'Professional Arabic Financial Operations ERP — Double-Entry Accounting, Multi-Currency Treasury, Projects & Partners',
         theme_color: '#1e3a5f',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['business', 'finance', 'productivity'],
         icons: [
           {
-            src: 'favicon.svg',
+            src: 'icons/icon-192x192.svg',
             sizes: '192x192',
             type: 'image/svg+xml'
           },
           {
-            src: 'favicon.svg',
+            src: 'icons/icon-512x512.svg',
             sizes: '512x512',
             type: 'image/svg+xml'
           },
           {
-            src: 'favicon.svg',
+            src: 'icons/icon-maskable.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'any maskable'

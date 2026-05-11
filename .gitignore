@@ -22,3 +22,23 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# AI / Assistant files
+.claude/
+.gemini/
+implementation_plan.md
+task.md
+walkthrough.md
+checkpoints/
+
+# Build and IDE
+node_modules
+dist
+.vscode
+.idea
+

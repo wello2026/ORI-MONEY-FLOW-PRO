@@ -1,0 +1,15 @@
+# Cloudflare Pages SPA routing
+# All routes except static assets → index.html
+
+/*    /index.html   200
+# Assets (images)
+/icons/*
+
+# Favicon
+/favicon.svg
+
+# Health check
+/health
+
+# Catch-all for all other routes → index.html (for React Router)
+/*    /index.html   200

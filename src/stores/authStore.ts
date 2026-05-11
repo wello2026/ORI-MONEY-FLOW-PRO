@@ -1,141 +1,100 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { User, UserRole } from '@/types'
+import type { User, UserRole, Company, CompanyRole } from '@/types'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 interface AuthState {
   user: User | null
+  currentCompany: Company | null
+  userCompanies: Company[]
+  companyRole: CompanyRole | null
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
   setUser: (user: User | null) => void
+  setCurrentCompany: (company: Company | null) => void
+  setUserCompanies: (companies: Company[]) => void
+  setCompanyRole: (role: CompanyRole | null) => void
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   updateProfile: (updates: Partial<User>) => void
   checkAuth: () => Promise<void>
-}
-
-const DEMO_USERS: Record<string, { name: string; role: UserRole }> = {
-  'admin@ori.ly': { name: 'مدير النظام', role: 'super_admin' },
-  'admin': { name: 'مدير النظام', role: 'super_admin' },
-  'manager@ori.ly': { name: 'مدير', role: 'admin' },
-  'manager': { name: 'مدير', role: 'admin' },
-  'employee@ori.ly': { name: 'موظف', role: 'employee' },
-  'employee': { name: 'موظف', role: 'employee' },
-  'test': { name: 'مستخدم تجريبي', role: 'super_admin' }
+  switchCompany: (companyId: string) => Promise<void>
+  loadUserCompanies: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      currentCompany: null,
+      userCompanies: [],
+      companyRole: null,
       isAuthenticated: false,
       isLoading: true,
       error: null,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setCurrentCompany: (company) => set({ currentCompany: company }),
+      setUserCompanies: (companies) => set({ userCompanies: companies }),
+      setCompanyRole: (role) => set({ companyRole: role }),
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null })
-        
-        const emailLower = email.toLowerCase().trim()
-        
-        // 1. التحقق من المستخدمين التجريبيين
-        const demoUser = DEMO_USERS[emailLower]
-        if (demoUser && password === 'admin123') {
-          console.log('Demo login match found, fetching profile...')
-          
-          // محاولة جلب المعرف الحقيقي من السيرفر لضمان اتساق البيانات
-          let userId = crypto.randomUUID()
-          if (isSupabaseConfigured()) {
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('email', emailLower.includes('@') ? emailLower : `${emailLower}@ori.ly`)
-                .single()
-              
-              if (profile) userId = profile.id
-            } catch (err) {
-              console.log('Could not fetch demo profile ID, using random:', err)
-            }
-          }
 
-          const user: User = {
-            id: userId,
-            email: emailLower.includes('@') ? emailLower : `${emailLower}@ori.ly`,
-            full_name: demoUser.name,
-            role: demoUser.role,
-            is_active: true,
-            created_at: new Date().toISOString()
-          }
-          set({ user, isAuthenticated: true, isLoading: false })
+        const emailLower = email.toLowerCase().trim()
+
+        if (!isSupabaseConfigured()) {
+          set({ error: 'Supabase غير مُعد. يرجى الاتصال بالمدير.', isLoading: false })
           return
         }
 
-        // 2. البحث في جدول المستخدمين (profiles)
-        if (isSupabaseConfigured()) {
-          try {
-            // البحث في جدول profiles
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('email', emailLower)
-              .single()
+        try {
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: emailLower,
+            password
+          })
 
-            if (profile && profileError === null) {
-              //找到了用户，现在检查密码
-              //对于演示，我们接受任何密码与现有配置文件
-              if (profile.is_active) {
-                console.log('User found in profiles:', profile)
-                const user: User = {
-                  id: profile.id,
-                  email: profile.email,
-                  full_name: profile.full_name,
-                  role: profile.role as UserRole,
-                  phone: profile.phone,
-                  is_active: profile.is_active,
-                  created_at: profile.created_at
-                }
-                set({ user, isAuthenticated: true, isLoading: false })
-                return
-              } else {
-                set({ error: 'الحساب غير نشط', isLoading: false })
-                return
-              }
-            }
-          } catch (err) {
-            console.log('Profile lookup failed:', err)
+          if (authError || !authData.user) {
+            set({ error: authError?.message || 'بيانات الدخول غير صحيحة', isLoading: false })
+            return
           }
-        }
 
-        // 3. محاولة Supabase Auth كحل أخير
-        if (isSupabaseConfigured()) {
-          try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-              email: emailLower,
-              password
-            })
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authData.user.id)
+            .single()
 
-            if (!error && data.user) {
-              const user: User = {
-                id: data.user.id,
-                email: data.user.email || emailLower,
-                full_name: data.user.user_metadata?.full_name || 'مستخدم',
-                role: 'employee',
-                is_active: true,
-                created_at: new Date().toISOString()
-              }
-              set({ user, isAuthenticated: true, isLoading: false })
-              return
-            }
-          } catch (err) {
-            console.log('Auth login failed:', err)
+          if (profileError || !profile) {
+            set({ error: 'لم يتم العثور على ملف شخصي للمستخدم', isLoading: false })
+            return
           }
-        }
 
-        // فشل كل المحاولات
-        set({ error: 'بيانات الدخول غير صحيحة', isLoading: false })
+          if (!profile.is_active) {
+            set({ error: 'الحساب غير نشط. يرجى التواصل مع المدير.', isLoading: false })
+            return
+          }
+
+          const user: User = {
+            id: profile.id,
+            email: profile.email,
+            full_name: profile.full_name,
+            role: profile.role as UserRole,
+            phone: profile.phone,
+            is_active: profile.is_active,
+            created_at: profile.created_at,
+            default_company_id: profile.default_company_id
+          }
+          set({ user, isAuthenticated: true, isLoading: false })
+
+          // Load user's companies after successful login
+          await get().loadUserCompanies()
+          return
+        } catch (err) {
+          console.error('Login error:', err)
+          set({ error: 'حدث خطأ أثناء تسجيل الدخول', isLoading: false })
+        }
       },
 
       logout: async () => {
@@ -146,7 +105,13 @@ export const useAuthStore = create<AuthState>()(
             console.log('Logout error:', err)
           }
         }
-        set({ user: null, isAuthenticated: false })
+        set({
+          user: null,
+          currentCompany: null,
+          userCompanies: [],
+          companyRole: null,
+          isAuthenticated: false
+        })
       },
 
       updateProfile: (updates) => {
@@ -154,6 +119,63 @@ export const useAuthStore = create<AuthState>()(
         if (currentUser) {
           const updatedUser = { ...currentUser, ...updates }
           set({ user: updatedUser })
+        }
+      },
+
+      loadUserCompanies: async () => {
+        if (!isSupabaseConfigured()) return
+        try {
+          const { data, error } = await supabase.rpc('get_user_companies')
+          if (error) {
+            console.error('Failed to load user companies:', error)
+            return
+          }
+          if (data && data.length > 0) {
+            const companies: Company[] = data.map((row: {
+              company_id: string
+              company_name: string
+              company_name_ar: string | null
+              country: string
+              default_currency: string
+              role: CompanyRole
+              is_current: boolean
+            }) => ({
+              id: row.company_id,
+              company_name: row.company_name,
+              company_name_ar: row.company_name_ar || row.company_name,
+              country: row.country,
+              default_currency: row.default_currency,
+              is_active: true,
+              created_at: ''
+            }))
+            set({ userCompanies: companies })
+
+            const current = companies.find(c => data.find((r: { is_current: boolean }) => r.is_current))
+            const role = data.find((r: { is_current: boolean }) => r.is_current)?.role as CompanyRole | null
+
+            if (current) {
+              set({ currentCompany: current, companyRole: role })
+            } else if (companies.length > 0) {
+              set({ currentCompany: companies[0], companyRole: data[0].role as CompanyRole })
+            }
+          }
+        } catch (err) {
+          console.error('loadUserCompanies error:', err)
+        }
+      },
+
+      switchCompany: async (companyId: string) => {
+        if (!isSupabaseConfigured()) return
+        try {
+          const { error } = await supabase.rpc('make_current_company', { p_company_id: companyId })
+          if (error) {
+            console.error('Failed to switch company:', error)
+            return
+          }
+          // Reload companies to get updated is_current state
+          await get().loadUserCompanies()
+        } catch (err) {
+          console.error('switchCompany error:', err)
         }
       },
 
@@ -165,7 +187,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const { data: { session } } = await supabase.auth.getSession()
-          
+
           if (session?.user) {
             const { data: profile } = await supabase
               .from('profiles')
@@ -174,9 +196,20 @@ export const useAuthStore = create<AuthState>()(
               .single()
 
             if (profile) {
-              set({ user: profile as User, isAuthenticated: true, isLoading: false })
+              const user: User = {
+                id: profile.id,
+                email: profile.email,
+                full_name: profile.full_name,
+                role: profile.role as UserRole,
+                phone: profile.phone,
+                is_active: profile.is_active,
+                created_at: profile.created_at,
+                default_company_id: profile.default_company_id
+              }
+              set({ user, isAuthenticated: true, isLoading: false })
+              await get().loadUserCompanies()
             } else {
-              set({ 
+              set({
                 user: {
                   id: session.user.id,
                   email: session.user.email || '',
@@ -184,23 +217,28 @@ export const useAuthStore = create<AuthState>()(
                   role: 'employee',
                   is_active: true,
                   created_at: new Date().toISOString()
-                }, 
-                isAuthenticated: true, 
-                isLoading: false 
+                },
+                isAuthenticated: true,
+                isLoading: false
               })
             }
           } else {
             set({ isLoading: false })
           }
         } catch (err) {
-          console.log('Auth check failed:', err)
+          console.error('Auth check failed:', err)
           set({ isLoading: false })
         }
       }
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated })
+      partialize: (state) => ({
+        user: state.user,
+        currentCompany: state.currentCompany,
+        companyRole: state.companyRole,
+        isAuthenticated: state.isAuthenticated
+      })
     }
   )
 )

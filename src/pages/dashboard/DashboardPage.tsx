@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom'
 import { TrendingUp, Wallet, RefreshCw, Brain, LayoutDashboard, Building, Users, ArrowUpRight, ArrowDownRight, Coins } from 'lucide-react'
 import { useAccountStore } from '@/stores/accountStore'
 import { useTransactionStore } from '@/stores/transactionStore'
+import { useAuthStore } from '@/stores/authStore'
 import { ROUTES } from '@/lib/constants'
 import { formatCurrency, formatRelativeTime } from '@/lib/format'
 import { DashboardCharts } from '@/components/dashboard/Charts'
 import { AiDashboard } from '@/components/dashboard/AiDashboard'
+import { CompanySwitcher } from '@/components/layout/CompanySwitcher'
 import { supabase } from '@/lib/supabase'
 
 export default function DashboardPage() {
@@ -16,6 +18,8 @@ export default function DashboardPage() {
   const transactions = useTransactionStore((state) => state.transactions)
   const fetchTransactions = useTransactionStore((state) => state.fetchTransactions)
   
+  const user = useAuthStore((state) => state.user)
+  const currentCompany = useAuthStore((state) => state.currentCompany)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'ai'>('overview')
   const [stats, setStats] = useState({ projects: 0, users: 0 })
@@ -55,16 +59,19 @@ export default function DashboardPage() {
     <div className="space-y-8 pb-24 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-black text-foreground tracking-tighter">المركز المالي الذهبي</h1>
-          <p className="text-muted-foreground text-sm font-bold">الرؤية الشاملة لشركة المقاولات</p>
+          <h1 className="text-3xl font-bold text-foreground">مرحباً {user?.full_name?.split(' ')[0] || 'بالمركز المالي'}</h1>
+          <p className="text-muted-foreground text-sm">{currentCompany?.company_name_ar || currentCompany?.company_name || 'ORI Financial Operations'}</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="w-14 h-14 rounded-3xl bg-card border-2 border-border flex items-center justify-center hover:border-primary transition-all shadow-gold"
-        >
-          <RefreshCw className={`w-6 h-6 text-primary ${isRefreshing ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-3">
+          <CompanySwitcher />
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="w-14 h-14 rounded-3xl bg-card border-2 border-border flex items-center justify-center hover:border-primary transition-all"
+          >
+            <RefreshCw className={`w-6 h-6 text-primary ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Primary KPI Grid */}
@@ -200,14 +207,23 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-primary to-primary-dark rounded-3xl p-8 relative overflow-hidden group shadow-gold">
-              <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-all duration-1000" />
-              <div className="relative z-10">
-                <h4 className="text-2xl font-black text-white mb-3">النظام الذهبي ORI</h4>
-                <p className="text-sm text-white/80 font-bold mb-6">لقد قمت بترقية النظام إلى النسخة الاحترافية المتكاملة لشركات المقاولات.</p>
-                <button className="w-full bg-white text-primary py-4 rounded-2xl font-black text-md shadow-lg hover:bg-opacity-90 transition-all active:scale-95">
-                  الدليل المحاسبي الشامل
-                </button>
+            <div className="glass-card">
+              <div className="p-6 border-b border-border/50 bg-muted/20">
+                <h3 className="font-bold text-lg">ملخص سريع</h3>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/20">
+                  <span className="text-sm text-muted-foreground">إجمالي المشاريع</span>
+                  <span className="font-bold">{stats.projects}</span>
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/20">
+                  <span className="text-sm text-muted-foreground">إجمالي المستخدمين</span>
+                  <span className="font-bold">{stats.users}</span>
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/20">
+                  <span className="text-sm text-muted-foreground">آخر تسجيل دخول</span>
+                  <span className="font-bold text-xs">{user?.created_at ? formatRelativeTime(user.created_at) : '—'}</span>
+                </div>
               </div>
             </div>
           </div>

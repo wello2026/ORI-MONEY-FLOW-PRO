@@ -4,11 +4,15 @@ import { router } from './Router'
 import { useThemeStore } from '@/stores/themeStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useSyncStore } from '@/stores/syncStore'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { OfflineBanner } from '@/components/ui/OfflineBanner'
 
 export default function App() {
   const initializeTheme = useThemeStore((state) => state.initializeTheme)
   const checkAuth = useAuthStore((state) => state.checkAuth)
   const initializeSync = useSyncStore((state) => state.initialize)
+  const isOnline = useSyncStore((state) => state.isOnline)
+  const pendingCount = useSyncStore((state) => state.pendingCount)
 
   useEffect(() => {
     initializeTheme()
@@ -16,5 +20,10 @@ export default function App() {
     initializeSync()
   }, [initializeTheme, checkAuth, initializeSync])
 
-  return <RouterProvider router={router} />
+  return (
+    <ErrorBoundary>
+      {!isOnline && <OfflineBanner pendingCount={pendingCount} />}
+      <RouterProvider router={router} />
+    </ErrorBoundary>
+  )
 }

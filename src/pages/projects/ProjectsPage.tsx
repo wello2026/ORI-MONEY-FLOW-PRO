@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Search, Building, Clock, X, DollarSign, Loader2 } from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -7,13 +8,14 @@ import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 
 export default function ProjectsPage() {
-  const { projects, isLoading, fetchProjects, createProject } = useProjectStore()
+  const { projects, isLoading, fetchProjects, createProject, fetchProjectFinancials } = useProjectStore()
   const user = useAuthStore((state) => state.user)
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [profiles, setProfiles] = useState<any[]>([])
+  const [projectFinancials, setProjectFinancials] = useState<Record<string, any>>({})
   
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -27,6 +29,19 @@ export default function ProjectsPage() {
     fetchProjects()
     fetchProfiles()
   }, [fetchProjects])
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      projects.forEach(p => {
+        fetchProjectFinancials(p.id).then(() => {
+          const financials = useProjectStore.getState().financials
+          if (financials) {
+            setProjectFinancials(prev => ({ ...prev, [p.id]: financials }))
+          }
+        })
+      })
+    }
+  }, [projects])
 
   async function fetchProfiles() {
     const { data } = await supabase.from('profiles').select('id, full_name').order('full_name')
@@ -89,60 +104,83 @@ export default function ProjectsPage() {
         </div>
       ) : filteredProjects.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProjects.map((project) => (
-            <div 
-              key={project.id}
-              className="glass-card group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden"
-            >
-              <div className="p-8">
-                <div className="flex items-start justify-between mb-8">
-                  <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-700">
-                    <Building className="w-8 h-8" />
+          {filteredProjects.map((project) => {
+            const fin = projectFinancials[project.id]
+            const expenses = fin?.total_expenses ?? 0
+            const revenues = fin?.total_revenues ?? 0
+            const budgetPct = fin?.budget_utilization_pct ?? 0
+            const netProfit = revenues - expenses
+            const progress = Math.min(budgetPct, 100)
+
+            return (
+              <div
+                key={project.id}
+                onClick={() => navigate(`/projects/${project.id}`)}
+                className="glass-card group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden cursor-pointer"
+              >
+                <div className="p-8">
+                  <div className="flex items-start justify-between mb-8">
+                    <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-700">
+                      <Building className="w-8 h-8" />
+                    </div>
+                    <div className={cn(
+                      "px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest",
+                      project.status === 'active' ? 'bg-success/10 text-success' : 'bg-muted/20 text-muted-foreground'
+                    )}>
+                      {project.status === 'active' ? 'موقع نشط' : 'مكتمل'}
+                    </div>
                   </div>
-                  <div className={cn(
-                    "px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest",
-                    project.status === 'active' ? 'bg-success/10 text-success' : 'bg-muted/20 text-muted-foreground'
-                  )}>
-                    {project.status === 'active' ? 'موقع نشط' : 'مكتمل'}
+
+                  <h3 className="text-2xl font-black text-foreground mb-2 group-hover:text-primary transition-colors">
+                    {project.name}
+                  </h3>
+                  <p className="text-sm font-bold text-muted-foreground mb-6 uppercase tracking-widest">{project.code}</p>
+                  
+                  <div className="space-y-6 pt-6 border-t border-border/30">
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase mb-1">الميزانية المرصودة</p>
+                        <p className="text-xl font-black text-foreground">
+                          {formatCurrency(project.budget || 0, project.currency)}
+                        </p>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[10px] font-black text-error uppercase mb-1">المصروفات</p>
+                        <p className="text-xl font-black text-error">
+                          {formatCurrency(expenses, project.currency)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-3 bg-muted/30 rounded-full overflow-hidden">
+                      <div
+                        className={cn(
+                          'h-full shadow-gold transition-all duration-700',
+                          budgetPct > 90 ? 'bg-error' : budgetPct > 70 ? 'bg-amber-500' : 'bg-primary'
+                        )}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground font-bold">{expenses.toFixed(0)} / {project.budget?.toLocaleString()}</span>
+                      <span className={cn('font-black', netProfit >= 0 ? 'text-success' : 'text-error')}>
+                        {netProfit >= 0 ? '+' : ''}{formatCurrency(netProfit, project.currency)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-
-                <h3 className="text-2xl font-black text-foreground mb-2 group-hover:text-primary transition-colors">
-                  {project.name}
-                </h3>
-                <p className="text-sm font-bold text-muted-foreground mb-6 uppercase tracking-widest">{project.code}</p>
                 
-                <div className="space-y-6 pt-6 border-t border-border/30">
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase mb-1">الميزانية المرصودة</p>
-                      <p className="text-xl font-black text-foreground">
-                        {formatCurrency(project.budget || 0, project.currency)}
-                      </p>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-[10px] font-black text-error uppercase mb-1">المصروفات الحالية</p>
-                      <p className="text-xl font-black text-error">
-                        0.00
-                      </p>
-                    </div>
+                <div className="bg-card/50 backdrop-blur-sm px-8 py-4 flex items-center justify-between border-t border-border/20">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-[10px] font-black text-muted-foreground">تم التحديث مؤخراً</span>
                   </div>
-
-                  <div className="w-full h-3 bg-muted/30 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary shadow-gold animate-pulse" style={{ width: '0%' }} />
-                  </div>
+                  <button className="text-primary font-black text-xs hover:underline">التفاصيل</button>
                 </div>
               </div>
-              
-              <div className="bg-card/50 backdrop-blur-sm px-8 py-4 flex items-center justify-between border-t border-border/20">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-[10px] font-black text-muted-foreground">تم التحديث مؤخراً</span>
-                </div>
-                <button className="text-primary font-black text-xs hover:underline">التفاصيل</button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <div className="glass-card flex flex-col items-center justify-center py-32 px-10 text-center rounded-[3rem]">

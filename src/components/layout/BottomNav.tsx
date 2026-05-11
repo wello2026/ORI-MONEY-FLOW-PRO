@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { Home, Wallet, Repeat, Shuffle, CheckCircle, Users, Settings, FileText, Building2 } from 'lucide-react'
+import { Home, Wallet, Repeat, Shuffle, CheckCircle, Users, Settings, FileText, Building2, UsersRound, Truck, Package, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/lib/constants'
 import { useNotificationStore } from '@/stores/notificationStore'
@@ -7,14 +7,17 @@ import { useAuthStore } from '@/stores/authStore'
 
 const iconMap: Record<string, any> = {
   home: Home,
+  treasury: Wallet,
+  journal: FileText,
   building: Building2,
-  wallet: Wallet,
-  repeat: Repeat,
-  shuffle: Shuffle,
   'check-circle': CheckCircle,
-  users: Users,
-  settings: Settings,
   'file-text': FileText,
+  settings: Settings,
+  users: Users,
+  partners: UsersRound,
+  suppliers: Truck,
+  products: Package,
+  expenses: Receipt,
 }
 
 export function BottomNav() {
@@ -24,13 +27,15 @@ export function BottomNav() {
 
   const navItems = [
     { path: ROUTES.DASHBOARD, label: 'الرئيسية', icon: 'home', roles: ['super_admin', 'admin', 'employee'] },
+    { path: ROUTES.TREASURIES, label: 'الخزائن', icon: 'treasury', roles: ['super_admin', 'admin', 'treasury'] },
+    { path: ROUTES.JOURNAL, label: 'القيود', icon: 'journal', roles: ['super_admin', 'admin', 'accountant'] },
+    { path: ROUTES.PARTNERS, label: 'الشركاء', icon: 'partners', roles: ['super_admin', 'admin', 'operations'] },
+    { path: ROUTES.SUPPLIERS, label: 'الموردين', icon: 'suppliers', roles: ['super_admin', 'admin', 'accountant'] },
+    { path: ROUTES.PRODUCTS, label: 'البطاقات', icon: 'products', roles: ['super_admin', 'admin', 'accountant', 'operations'] },
+    { path: ROUTES.EXPENSES, label: 'المصروفات', icon: 'expenses', roles: ['super_admin', 'admin', 'accountant', 'operations', 'employee'] },
     { path: ROUTES.PROJECTS, label: 'المشاريع', icon: 'building', roles: ['super_admin', 'admin', 'employee'] },
-    { path: ROUTES.ACCOUNTS, label: 'الحسابات', icon: 'wallet', roles: ['super_admin', 'admin', 'employee'] },
-    { path: ROUTES.TRANSACTIONS, label: 'المعاملات', icon: 'repeat', roles: ['super_admin', 'admin', 'employee'] },
-    { path: ROUTES.TRANSFERS, label: 'التحويلات', icon: 'shuffle', roles: ['super_admin', 'admin', 'employee'] },
     { path: ROUTES.APPROVALS, label: 'الموافقات', icon: 'check-circle', roles: ['super_admin', 'admin'] },
     { path: ROUTES.REPORTS, label: 'التقارير', icon: 'file-text', roles: ['super_admin', 'admin'] },
-    { path: ROUTES.USERS, label: 'الموظفين', icon: 'users', roles: ['super_admin', 'admin'] },
     { path: ROUTES.SETTINGS, label: 'الإعدادات', icon: 'settings', roles: ['super_admin', 'admin', 'employee'] },
   ].filter(item => item.roles.includes(user?.role || 'employee'))
 

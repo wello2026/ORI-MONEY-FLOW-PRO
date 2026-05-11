@@ -27,6 +27,21 @@ const SystemTestPage = lazy(() => import('@/pages/test/SystemTestPage'))
 const UsersPage = lazy(() => import('@/pages/users/UsersPage'))
 const RolesPage = lazy(() => import('@/pages/users/RolesPage'))
 const ProjectsPage = lazy(() => import('@/pages/projects/ProjectsPage'))
+const ProjectDetailPage = lazy(() => import('@/pages/projects/ProjectDetailPage'))
+const TreasuriesPage = lazy(() => import('@/pages/treasury/TreasuriesPage'))
+const TreasuryDetailPage = lazy(() => import('@/pages/treasury/TreasuryDetailPage'))
+const CurrencyTransferPage = lazy(() => import('@/pages/treasury/CurrencyTransferPage'))
+const JournalPage = lazy(() => import('@/pages/accounting/JournalPage'))
+const JournalEntryFormPage = lazy(() => import('@/pages/accounting/JournalEntryFormPage'))
+const AccountingReportsPage = lazy(() => import('@/pages/accounting/AccountingReportsPage'))
+const PartnersPage = lazy(() => import('@/pages/partners/PartnersPage'))
+const PartnerDetailPage = lazy(() => import('@/pages/partners/PartnerDetailPage'))
+const SuppliersPage = lazy(() => import('@/pages/suppliers/SuppliersPage'))
+const SupplierDetailPage = lazy(() => import('@/pages/suppliers/SupplierDetailPage'))
+const ProductsPage = lazy(() => import('@/pages/products/ProductsPage'))
+const ProductDetailPage = lazy(() => import('@/pages/products/ProductDetailPage'))
+const ExpensesPage = lazy(() => import('@/pages/expenses/ExpensesPage'))
+const ExpenseDetailPage = lazy(() => import('@/pages/expenses/ExpenseDetailPage'))
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import AppLayout from '@/components/layout/AppLayout'
@@ -264,6 +279,126 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <ProjectsPage />
+          </Suspense>
+        )
+      },
+      {
+        path: '/projects/:id',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ProjectDetailPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.TREASURIES,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <TreasuriesPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.TREASURY_DETAIL,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <TreasuryDetailPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.TREASURY_TRANSFER,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <CurrencyTransferPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.JOURNAL,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <JournalPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.JOURNAL_NEW,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <JournalEntryFormPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.ACCOUNTING_REPORTS,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <AccountingReportsPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.PARTNERS,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <PartnersPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.PARTNER_DETAIL,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <PartnerDetailPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.SUPPLIERS,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <SuppliersPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.SUPPLIER_DETAIL,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <SupplierDetailPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.PRODUCTS,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ProductsPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.PRODUCT_DETAIL,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ProductDetailPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.EXPENSES,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ExpensesPage />
+          </Suspense>
+        )
+      },
+      {
+        path: ROUTES.EXPENSE_DETAIL,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ExpenseDetailPage />
           </Suspense>
         )
       },

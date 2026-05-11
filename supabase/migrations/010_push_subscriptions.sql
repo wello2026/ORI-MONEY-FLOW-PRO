@@ -15,7 +15,7 @@ CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(
 
 -- RLS Policies
 ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
-
+DROP POLICY IF EXISTS "Users can manage their own subscriptions" ON push_subscriptions;
 CREATE POLICY "Users can manage their own subscriptions"
 ON push_subscriptions
 FOR ALL
