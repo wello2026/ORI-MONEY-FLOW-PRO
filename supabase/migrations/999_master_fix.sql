@@ -74,6 +74,31 @@ CREATE TABLE profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ============================================================
+-- PROFILES AUTO-CREATE TRIGGER (must be after profiles table)
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO profiles (id, email, full_name, role, is_active)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.email, ''),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'employee'),
+    true
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
 -- user_companies
 CREATE TABLE user_companies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1191,7 +1216,14 @@ CREATE POLICY "user_companies_all" ON user_companies FOR ALL TO authenticated
   USING (user_id = auth.uid() OR EXISTS (SELECT 1 FROM user_companies WHERE user_id = auth.uid() AND company_id = user_companies.company_id AND user_role = 'owner'));
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "profiles_all" ON profiles FOR ALL TO authenticated
+CREATE POLICY "profiles_insert_own" ON profiles FOR INSERT TO authenticated
+  WITH CHECK (id = auth.uid());
+
+CREATE POLICY "profiles_select_own" ON profiles FOR SELECT TO authenticated
+  USING (id = auth.uid() OR EXISTS (SELECT 1 FROM user_companies WHERE user_id = auth.uid() AND user_role IN ('owner','admin'))
+     OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'super_admin'));
+
+CREATE POLICY "profiles_update_own" ON profiles FOR UPDATE TO authenticated
   USING (id = auth.uid() OR EXISTS (SELECT 1 FROM user_companies WHERE user_id = auth.uid() AND user_role IN ('owner','admin'))
      OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'super_admin'));
 
@@ -1703,4 +1735,4 @@ CREATE POLICY "currency_rates_all" ON currency_rates FOR ALL TO authenticated
   USING ((company_id = get_user_current_company() OR company_id IS NULL)
      OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'super_admin'));
 
-CREATE INDEX idx_currency_rates_company ON currency_rates(company_id);
+CREATE INDEX IF NOT EXISTS idx_currency_rates_company ON currency_rates(company_id);
