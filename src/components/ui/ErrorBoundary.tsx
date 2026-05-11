@@ -1,5 +1,4 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react'
-import { Button } from './Button'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 
 interface Props {
@@ -49,16 +48,19 @@ export class ErrorBoundary extends Component<Props, State> {
               عذراً، حدث خطأ أثناء تحميل هذا القسم. يمكنك إعادة المحاولة أو العودة للصفحة الرئيسية.
             </p>
             <div className="flex gap-3 justify-center">
-              <Button onClick={this.handleReset} className="gap-2">
+              <button 
+                onClick={this.handleReset} 
+                className="btn-primary flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold"
+              >
                 <RefreshCw className="w-4 h-4" />
                 إعادة المحاولة
-              </Button>
-              <Button
-                variant="outline"
+              </button>
+              <button
                 onClick={() => window.location.href = '/'}
+                className="btn-secondary px-6 py-2 rounded-xl text-sm font-bold"
               >
                 الرئيسية
-              </Button>
+              </button>
             </div>
             {import.meta.env.DEV && this.state.error && (
               <details className="mt-6 text-right">

@@ -54,9 +54,9 @@ export function PartnerOperationModal({ partnerId, operationType, partnerName, c
         partner_id: partnerId,
         amount: numAmount,
         currency_code,
-        description: description || null,
-        reference_number: reference_number || null,
-        project_id: project_id || null
+        description: description || undefined,
+        reference_number: reference_number || undefined,
+        project_id: project_id || undefined
       })
       if (result.success) onSuccess()
     } else if (operationType === 'material') {
@@ -65,9 +65,9 @@ export function PartnerOperationModal({ partnerId, operationType, partnerName, c
         entry_type: 'material_purchase',
         amount: numAmount,
         currency_code,
-        description: description || null,
-        reference_number: reference_number || null,
-        project_id: project_id || null
+        description: description || undefined,
+        reference_number: reference_number || undefined,
+        project_id: project_id || undefined
       })
       if (result.success) onSuccess()
     } else if (operationType === 'labor') {
@@ -76,9 +76,9 @@ export function PartnerOperationModal({ partnerId, operationType, partnerName, c
         entry_type: 'labor_cost',
         amount: numAmount,
         currency_code,
-        description: description || null,
-        reference_number: reference_number || null,
-        project_id: project_id || null
+        description: description || undefined,
+        reference_number: reference_number || undefined,
+        project_id: project_id || undefined
       })
       if (result.success) onSuccess()
     } else if (operationType === 'settle') {

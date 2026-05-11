@@ -71,7 +71,7 @@ export function useApiError(options: UseApiErrorOptions = {}) {
       createNotification({
         title: 'خطأ',
         body: apiError.message,
-        type: 'error'
+        type: 'alert'
       })
     }
     return apiError

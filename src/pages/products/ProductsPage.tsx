@@ -139,7 +139,7 @@ export default function ProductsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(p => (
-            <ProductCard key={p.id} product={p} onClick={() => navigate(`/products/${p.id}`)} />
+            <ProductCard key={p.id} p={p} onClick={() => navigate(`/products/${p.id}`)} />
           ))}
         </div>
       )}

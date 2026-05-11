@@ -104,7 +104,7 @@ export default function NotificationsPage() {
           <button key={t} onClick={() => setTab(t as Tab)}
             className={cn('flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5', tab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-background/40')}>
             {label as string}
-            {count > 0 && <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full', tab === t ? 'bg-primary-foreground text-primary' : 'bg-destructive text-white')}>{count}</span>}
+            {Number(count) > 0 && <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full', tab === t ? 'bg-primary-foreground text-primary' : 'bg-destructive text-white')}>{count}</span>}
           </button>
         ))}
       </div>
@@ -228,7 +228,7 @@ export default function NotificationsPage() {
                       className="w-5 h-5 rounded accent-primary" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <input type="number" value={prefsForm[item.thresh as keyof typeof prefsForm]}
+                    <input type="number" value={prefsForm[item.thresh as keyof typeof prefsForm] as number}
                       onChange={e => setPrefsForm({ ...prefsForm, [item.thresh]: parseFloat(e.target.value) || 0 })}
                       className="flex-1 px-3 py-2 bg-background/60 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-primary/40" />
                     <span className="text-xs text-muted-foreground font-bold">{item.unit}</span>
@@ -253,7 +253,7 @@ export default function NotificationsPage() {
                       className="w-5 h-5 rounded accent-primary" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <input type="number" value={prefsForm[item.thresh as keyof typeof prefsForm]}
+                    <input type="number" value={prefsForm[item.thresh as keyof typeof prefsForm] as number}
                       onChange={e => setPrefsForm({ ...prefsForm, [item.thresh]: parseFloat(e.target.value) || 0 })}
                       className="flex-1 px-3 py-2 bg-background/60 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-primary/40" />
                     <span className="text-xs text-muted-foreground font-bold">{item.unit}</span>

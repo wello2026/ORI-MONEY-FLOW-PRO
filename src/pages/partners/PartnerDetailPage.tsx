@@ -329,7 +329,7 @@ export default function PartnerDetailPage() {
             setShowEditModal(false)
             if (id) {
               fetchPartner(id)
-              fetchSummary()
+              fetchBalance(id)
             }
           }}
         />

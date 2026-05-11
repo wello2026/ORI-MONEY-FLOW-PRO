@@ -35,6 +35,7 @@ interface ProductState {
     cost_card_id: string
     component_type: string
     component_name: string
+    component_name_ar?: string
     quantity?: number
     unit_cost?: number
     supplier_id?: string
@@ -198,6 +199,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
         cost_card_id: data.cost_card_id,
         component_type: data.component_type,
         component_name: data.component_name,
+        component_name_ar: data.component_name_ar,
         quantity: data.quantity || 1,
         unit_cost: data.unit_cost || 0,
         supplier_id: data.supplier_id || null,

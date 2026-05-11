@@ -34,7 +34,7 @@ interface TreasuryState {
 
   fetchTreasuries: () => Promise<void>
   fetchTreasury: (id: string) => Promise<void>
-  createTreasury: (data: Omit<Treasury, 'id' | 'created_at' | 'updated_at' | 'current_balance'>) => Promise<{ success: boolean; error?: string }>
+  createTreasury: (data: Omit<Treasury, 'id' | 'created_at' | 'updated_at' | 'current_balance' | 'company_id' | 'is_active' | 'min_balance'>) => Promise<{ success: boolean; error?: string }>
   updateTreasury: (id: string, updates: Partial<Treasury>) => Promise<{ success: boolean; error?: string }>
   deleteTreasury: (id: string) => Promise<{ success: boolean; error?: string }>
 
