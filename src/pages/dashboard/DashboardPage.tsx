@@ -165,7 +165,7 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <p className="font-black text-foreground text-lg">{tx.type}</p>
-                        <p className="text-xs text-muted-foreground font-bold">{tx.reference} • {formatRelativeTime(tx.created_at)}</p>
+                        <p className="text-xs text-muted-foreground font-bold">{tx.reference || tx.id.slice(0,8)} • {formatRelativeTime(tx.created_at)}</p>
                       </div>
                     </div>
                     <div className="text-left">

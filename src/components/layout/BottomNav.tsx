@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { Home, Wallet, Repeat, Shuffle, CheckCircle, Users, Settings, FileText, Building2, UsersRound, Truck, Package, Receipt } from 'lucide-react'
+import { Home, Wallet, Repeat, Shuffle, CheckCircle, Users, Settings, FileText, Building2, UsersRound, Truck, Package, Receipt, ArrowRightLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/lib/constants'
 import { useNotificationStore } from '@/stores/notificationStore'
@@ -18,6 +18,7 @@ const iconMap: Record<string, any> = {
   suppliers: Truck,
   products: Package,
   expenses: Receipt,
+  transfers: ArrowRightLeft,
 }
 
 export function BottomNav() {
@@ -26,8 +27,9 @@ export function BottomNav() {
   const location = useLocation()
 
   const navItems = [
-    { path: ROUTES.DASHBOARD, label: 'الرئيسية', icon: 'home', roles: ['super_admin', 'admin', 'employee'] },
+    { path: ROUTES.DASHBOARD, label: 'الرئيسية', icon: 'home', roles: ['super_admin', 'admin', 'employee', 'viewer'] },
     { path: ROUTES.TREASURIES, label: 'الخزائن', icon: 'treasury', roles: ['super_admin', 'admin', 'treasury'] },
+    { path: ROUTES.TRANSFERS, label: 'التحويلات', icon: 'transfers', roles: ['super_admin', 'admin', 'treasury'] },
     { path: ROUTES.JOURNAL, label: 'القيود', icon: 'journal', roles: ['super_admin', 'admin', 'accountant'] },
     { path: ROUTES.PARTNERS, label: 'الشركاء', icon: 'partners', roles: ['super_admin', 'admin', 'operations'] },
     { path: ROUTES.SUPPLIERS, label: 'الموردين', icon: 'suppliers', roles: ['super_admin', 'admin', 'accountant'] },
@@ -36,7 +38,9 @@ export function BottomNav() {
     { path: ROUTES.PROJECTS, label: 'المشاريع', icon: 'building', roles: ['super_admin', 'admin', 'employee'] },
     { path: ROUTES.APPROVALS, label: 'الموافقات', icon: 'check-circle', roles: ['super_admin', 'admin'] },
     { path: ROUTES.REPORTS, label: 'التقارير', icon: 'file-text', roles: ['super_admin', 'admin'] },
-    { path: ROUTES.SETTINGS, label: 'الإعدادات', icon: 'settings', roles: ['super_admin', 'admin', 'employee'] },
+    { path: ROUTES.USERS, label: 'المستخدمين', icon: 'users', roles: ['super_admin', 'admin'] },
+    { path: ROUTES.EMPLOYEES, label: 'الموظفين', icon: 'users', roles: ['super_admin', 'admin'] },
+    { path: ROUTES.SETTINGS, label: 'الإعدادات', icon: 'settings', roles: ['super_admin', 'admin', 'employee', 'viewer'] },
   ].filter(item => item.roles.includes(user?.role || 'employee'))
 
   return (

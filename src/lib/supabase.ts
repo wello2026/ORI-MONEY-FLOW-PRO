@@ -612,54 +612,7 @@ export type Database = {
           created_at?: string
         }
       }
-      supplier_bills: {
-        Row: {
-          id: string
-          supplier_id: string | null
-          invoice_number: string | null
-          invoice_date: string | null
-          due_date: string | null
-          amount: number | null
-          currency_code: string | null
-          tax_amount: number | null
-          total_amount: number | null
-          status: string | null
-          project_id: string | null
-          company_id: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          supplier_id?: string | null
-          invoice_number?: string | null
-          invoice_date?: string | null
-          due_date?: string | null
-          amount?: number | null
-          currency_code?: string | null
-          tax_amount?: number | null
-          total_amount?: number | null
-          status?: string | null
-          project_id?: string | null
-          company_id?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          supplier_id?: string | null
-          invoice_number?: string | null
-          invoice_date?: string | null
-          due_date?: string | null
-          amount?: number | null
-          currency_code?: string | null
-          tax_amount?: number | null
-          total_amount?: number | null
-          status?: string | null
-          project_id?: string | null
-          company_id?: string | null
-          created_at?: string
-        }
-      }
-      treasuries: {
+            treasuries: {
         Row: {
           id: string
           company_id: string
@@ -976,10 +929,9 @@ export type Database = {
           supplier_code: string
           supplier_name: string
           supplier_name_ar: string | null
-          supplier_type: string | null
-          country: string | null
-          currency_code: string
           contact_person: string | null
+          country: string | null
+          currency_code: string | null
           phone: string | null
           email: string | null
           address: string | null
@@ -1003,10 +955,9 @@ export type Database = {
           supplier_code: string
           supplier_name: string
           supplier_name_ar?: string | null
-          supplier_type?: string | null
-          country?: string | null
-          currency_code?: string
           contact_person?: string | null
+          country?: string | null
+          currency_code?: string | null
           phone?: string | null
           email?: string | null
           address?: string | null
@@ -1017,7 +968,6 @@ export type Database = {
           bank_swift?: string | null
           payment_terms?: number
           credit_limit?: number
-          current_balance?: number
           notes?: string | null
           is_active?: boolean
           created_by?: string | null
@@ -1030,10 +980,9 @@ export type Database = {
           supplier_code?: string
           supplier_name?: string
           supplier_name_ar?: string | null
-          supplier_type?: string | null
-          country?: string | null
-          currency_code?: string
           contact_person?: string | null
+          country?: string | null
+          currency_code?: string | null
           phone?: string | null
           email?: string | null
           address?: string | null
@@ -1059,13 +1008,13 @@ export type Database = {
           supplier_id: string
           invoice_number: string
           invoice_date: string
-          due_date: string
+          due_date: string | null
           description: string | null
-          subtotal: number
-          tax_amount: number
-          discount_amount: number
+          subtotal: number | null
+          tax_amount: number | null
+          discount_amount: number | null
           total_amount: number
-          currency_code: string
+          currency_code: string | null
           exchange_rate: number
           amount_paid: number
           amount_due: number
@@ -1083,15 +1032,16 @@ export type Database = {
           supplier_id: string
           invoice_number: string
           invoice_date?: string
-          due_date: string
+          due_date?: string | null
           description?: string | null
-          subtotal?: number
-          tax_amount?: number
-          discount_amount?: number
+          subtotal?: number | null
+          tax_amount?: number | null
+          discount_amount?: number | null
           total_amount: number
-          currency_code?: string
+          currency_code?: string | null
           exchange_rate?: number
           amount_paid?: number
+          amount_due?: number
           status?: string
           project_id?: string | null
           reference_number?: string | null
@@ -1106,15 +1056,16 @@ export type Database = {
           supplier_id?: string
           invoice_number?: string
           invoice_date?: string
-          due_date?: string
+          due_date?: string | null
           description?: string | null
-          subtotal?: number
-          tax_amount?: number
-          discount_amount?: number
+          subtotal?: number | null
+          tax_amount?: number | null
+          discount_amount?: number | null
           total_amount?: number
-          currency_code?: string
+          currency_code?: string | null
           exchange_rate?: number
           amount_paid?: number
+          amount_due?: number
           status?: string
           project_id?: string | null
           reference_number?: string | null
@@ -1130,10 +1081,10 @@ export type Database = {
           company_id: string
           supplier_id: string
           invoice_id: string | null
-          payment_number: string
+          payment_number: string | null
           payment_date: string
           amount: number
-          currency_code: string
+          currency_code: string | null
           exchange_rate: number
           payment_method: string | null
           treasury_transaction_id: string | null
@@ -1148,10 +1099,10 @@ export type Database = {
           company_id: string
           supplier_id: string
           invoice_id?: string | null
-          payment_number: string
+          payment_number?: string | null
           payment_date?: string
           amount: number
-          currency_code?: string
+          currency_code?: string | null
           exchange_rate?: number
           payment_method?: string | null
           treasury_transaction_id?: string | null
@@ -1166,10 +1117,10 @@ export type Database = {
           company_id?: string
           supplier_id?: string
           invoice_id?: string | null
-          payment_number?: string
+          payment_number?: string | null
           payment_date?: string
           amount?: number
-          currency_code?: string
+          currency_code?: string | null
           exchange_rate?: number
           payment_method?: string | null
           treasury_transaction_id?: string | null

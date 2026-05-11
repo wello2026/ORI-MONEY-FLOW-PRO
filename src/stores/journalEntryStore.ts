@@ -169,16 +169,18 @@ export const useAccountingStore = create<AccountingState>((set, get) => ({
       }))
 
       const { data: result, error } = await supabase.rpc('create_journal_entry', {
-        p_lines: linesJson,
-        p_description: data.description,
-        p_reference_number: data.reference_number || null,
         p_entry_date: data.entry_date || new Date().toISOString().split('T')[0],
+        p_description: data.description,
+        p_lines: linesJson,
+        p_source_type: null,
+        p_source_id: null,
+        p_reference_number: data.reference_number || null,
         p_project_id: data.project_id || null
       })
 
       if (error) throw error
 
-      const rpcResult = result?.[0]
+      const rpcResult = Array.isArray(result) ? result[0] : result
       if (!rpcResult?.success) {
         set({ error: rpcResult?.message || 'فشل إنشاء القيد', isLoading: false })
         return { success: false, error: rpcResult?.message }
@@ -200,8 +202,8 @@ export const useAccountingStore = create<AccountingState>((set, get) => ({
 
     try {
       const { data, error } = await supabase.rpc('get_trial_balance', {
-        p_date_from: dateFrom || null,
-        p_date_to: dateTo || null
+        p_company_id: null,
+        p_as_of_date: dateTo || new Date().toISOString().split('T')[0]
       })
 
       if (error) throw error
@@ -217,9 +219,9 @@ export const useAccountingStore = create<AccountingState>((set, get) => ({
 
     try {
       const { data, error } = await supabase.rpc('get_general_journal', {
-        p_date_from: dateFrom || null,
-        p_date_to: dateTo || null,
-        p_account_id: accountId || null
+        p_company_id: null,
+        p_start_date: dateFrom || null,
+        p_end_date: dateTo || null
       })
 
       if (error) throw error
@@ -235,8 +237,9 @@ export const useAccountingStore = create<AccountingState>((set, get) => ({
 
     try {
       const { data, error } = await supabase.rpc('get_income_statement', {
-        p_date_from: dateFrom || new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
-        p_date_to: dateTo || new Date().toISOString().split('T')[0]
+        p_company_id: null,
+        p_start_date: dateFrom || new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+        p_end_date: dateTo || new Date().toISOString().split('T')[0]
       })
 
       if (error) throw error
@@ -252,7 +255,8 @@ export const useAccountingStore = create<AccountingState>((set, get) => ({
 
     try {
       const { data, error } = await supabase.rpc('get_balance_sheet', {
-        p_date: asOfDate || new Date().toISOString().split('T')[0]
+        p_company_id: null,
+        p_as_of_date: asOfDate || new Date().toISOString().split('T')[0]
       })
 
       if (error) throw error
@@ -268,8 +272,9 @@ export const useAccountingStore = create<AccountingState>((set, get) => ({
     try {
       const { data, error } = await supabase.rpc('get_account_ledger', {
         p_account_id: accountId,
-        p_date_from: dateFrom || null,
-        p_date_to: dateTo || null
+        p_company_id: null,
+        p_start_date: dateFrom || null,
+        p_end_date: dateTo || null
       })
 
       if (error) throw error
@@ -285,8 +290,9 @@ export const useAccountingStore = create<AccountingState>((set, get) => ({
 
     try {
       const { data, error } = await supabase.rpc('search_accounts_for_journal', {
-        p_query: query || '',
-        p_currency: currency || null
+        p_search: query || '',
+        p_company_id: null,
+        p_limit: 20
       })
 
       if (error) throw error
