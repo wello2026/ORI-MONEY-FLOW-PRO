@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNotificationStore } from '@/stores/notificationStore'
+import { useAuthStore } from '@/stores/authStore'
 
 export type ApiErrorCode =
   | 'network' | 'unauthorized' | 'forbidden' | 'not_found'
@@ -71,7 +72,9 @@ export function useApiError(options: UseApiErrorOptions = {}) {
       createNotification({
         title: 'خطأ',
         body: apiError.message,
-        type: 'alert'
+        type: 'alert',
+        user_id: useAuthStore.getState().user?.id || '',
+        is_read: false
       })
     }
     return apiError

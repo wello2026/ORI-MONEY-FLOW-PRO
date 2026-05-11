@@ -4,7 +4,8 @@ import {
   Plus, FileText, Search, Calendar, RefreshCw, Filter,
   ChevronDown, ChevronLeft, Eye
 } from 'lucide-react'
-import { useAccountingStore, JournalEntry } from '@/stores/journalEntryStore'
+import { useAccountingStore } from '@/stores/journalEntryStore'
+import type { JournalEntry } from '@/stores/journalEntryStore'
 import { formatCurrency, formatRelativeTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 

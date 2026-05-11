@@ -3,6 +3,7 @@ import { X, ArrowUpRight, Package, UserCog, CheckCircle } from 'lucide-react'
 import { usePartnerStore } from '@/stores/partnerStore'
 import { useTreasuryStore } from '@/stores/treasuryStore'
 import { useAuthStore } from '@/stores/authStore'
+import type { JournalEntryLine } from '@/types'
 
 interface Props {
   partnerId: string
@@ -87,8 +88,8 @@ export function PartnerOperationModal({ partnerId, operationType, partnerName, c
         settlement_amount: numAmount,
         direction,
         currency_code,
-        description: description || null,
-        reference_number: reference_number || null
+        description: description || undefined,
+        reference_number: reference_number || undefined
       })
       if (result.success) onSuccess()
     }
