@@ -3,7 +3,7 @@ import { X, ArrowUpRight, Package, UserCog, CheckCircle } from 'lucide-react'
 import { usePartnerStore } from '@/stores/partnerStore'
 import { useTreasuryStore } from '@/stores/treasuryStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { JournalEntryLine } from '@/types'
+import type { JournalEntryLine } from '@/stores/journalEntryStore'
 
 interface Props {
   partnerId: string

@@ -65,7 +65,7 @@ export interface Treasury {
   notes?: string
   is_active: boolean
   allow_overdraft: boolean
-  min_balance: number
+  min_balance?: number
   max_balance?: number
   alert_threshold?: number
   created_by?: string

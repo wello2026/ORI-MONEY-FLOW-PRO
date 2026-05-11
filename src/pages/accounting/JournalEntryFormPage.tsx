@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Search, AlertTriangle, CheckCircle } from 'lucide-react'
 import { useAccountingStore } from '@/stores/journalEntryStore'
-import type { JournalEntryLine } from '@/types'
+import type { JournalEntryLine } from '@/stores/journalEntryStore'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
