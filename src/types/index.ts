@@ -112,23 +112,19 @@ export interface CurrencyRate {
   created_at: string
 }
 
-export type AccountType = 'cashbox' | 'bank' | 'expense' | 'income' | 'employee' | 'temporary' | 'asset' | 'liability' | 'equity' | 'revenue'
+export type AccountType = 'cashbox' | 'bank' | 'expense' | 'income' | 'employee' | 'temporary'
 export type AccountStatus = 'active' | 'inactive' | 'archived'
 
 export interface Account {
   id: string
   code: string
   name: string
-  name_ar?: string
   type: AccountType
-  parent_id?: string
-  owner_id?: string
-  company_id?: string
   balance: number
   currency: string
+  parent_id?: string
+  owner_id?: string
   status: AccountStatus
-  is_active: boolean
-  allow_negative: boolean
   notes?: string
   created_by: string
   created_at: string
@@ -142,25 +138,25 @@ export type TransactionStatus = 'pending' | 'approved' | 'rejected' | 'completed
 export interface Transaction {
   id: string
   reference: string
-  company_id?: string
-  account_id: string
-  project_id?: string
-  offset_account_id?: string
   type: TransactionType
   amount: number
   currency?: string
   exchange_rate?: number
   description?: string
-  reference_number?: string
-  transaction_date?: string
-  status: TransactionStatus
-  approved_by?: string
-  approved_at?: string
+  account_id: string
+  project_id?: string
+  offset_account_id?: string
   created_by: string
-  created_at: string
-  updated_at: string
+  approved_by?: string
+  status: TransactionStatus
   attachments?: string[]
   metadata?: Record<string, unknown>
+  created_at: string
+  updated_at: string
+  account?: Account
+  offset_account?: Account
+  creator?: User
+  approver?: User
 }
 
 export type TransferStatus = 'pending' | 'approved' | 'rejected' | 'completed'
