@@ -1,7 +1,9 @@
 import { create } from 'zustand'
+import { createClient } from '@supabase/supabase-js'
 import type { User } from '@/types'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { db, addToSyncQueue } from '@/lib/db'
+import { useAuthStore } from './authStore'
 
 interface EmployeeState {
   employees: User[]
@@ -10,7 +12,7 @@ interface EmployeeState {
   error: string | null
   fetchEmployees: () => Promise<void>
   fetchEmployee: (id: string) => Promise<void>
-  createEmployee: (employee: Omit<User, 'id' | 'created_at'>) => Promise<User | null>
+  createEmployee: (employee: Omit<User, 'id' | 'created_at'> & { password?: string }) => Promise<User | null>
   updateEmployee: (id: string, updates: Partial<User>) => Promise<void>
   deleteEmployee: (id: string) => Promise<void>
   toggleEmployeeStatus: (id: string) => Promise<void>
@@ -69,24 +71,50 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
 
   createEmployee: async (employeeData) => {
     set({ isLoading: true, error: null })
-    const newEmployee: User = {
-      ...employeeData,
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString(),
-      is_active: true
-    }
+    const password = employeeData.password || ''
+    const cleanEmployeeData = { ...employeeData }
+    delete (cleanEmployeeData as any).password
+    const currentCompany = useAuthStore.getState().currentCompany
 
     try {
       if (isSupabaseConfigured()) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .insert(newEmployee)
-          .select()
-          .single()
+        const authClient = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_ANON_KEY,
+          {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+              detectSessionInUrl: false
+            }
+          }
+        )
+
+        const { data: authData, error } = await authClient.auth.signUp({
+          email: cleanEmployeeData.email.trim().toLowerCase(),
+          password,
+          options: {
+            data: {
+              full_name: cleanEmployeeData.full_name,
+              phone: cleanEmployeeData.phone,
+              role: cleanEmployeeData.role,
+              company_role: cleanEmployeeData.role === 'admin' ? 'admin' : 'viewer',
+              company_id: currentCompany?.id
+            }
+          }
+        })
 
         if (error) throw error
-        if (data) {
-          const employee = data as User
+        if (authData.user) {
+          const employee: User = {
+            id: authData.user.id,
+            full_name: cleanEmployeeData.full_name,
+            email: cleanEmployeeData.email,
+            role: cleanEmployeeData.role,
+            phone: cleanEmployeeData.phone,
+            is_active: true,
+            created_at: new Date().toISOString()
+          }
           set((state) => ({
             employees: [employee, ...state.employees],
             isLoading: false
@@ -94,6 +122,12 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
           return employee
         }
       } else {
+        const newEmployee: User = {
+          ...cleanEmployeeData,
+          id: crypto.randomUUID(),
+          created_at: new Date().toISOString(),
+          is_active: true
+        }
         await db.profiles.put({ ...newEmployee, synced: false })
         try {
           await addToSyncQueue('create', 'profiles', newEmployee as unknown as Record<string, unknown>)
@@ -106,6 +140,12 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
         return newEmployee
       }
     } catch (error) {
+      const newEmployee: User = {
+        ...cleanEmployeeData,
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        is_active: true
+      }
       await db.profiles.put({ ...newEmployee, synced: false })
       set((state) => ({
         employees: [newEmployee, ...state.employees],

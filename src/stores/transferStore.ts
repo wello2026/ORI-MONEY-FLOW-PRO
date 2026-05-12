@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Transfer, TransferStatus } from '@/types'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { useAuthStore } from './authStore'
 import { useAccountStore } from './accountStore'
 import { v4 as uuidv4 } from 'uuid'
@@ -49,7 +49,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       set({ transfers: localData as unknown as Transfer[], isLoading: false })
 
       // 2. Sync from Supabase if online
-      if (isOnline) {
+      if (isOnline && isSupabaseConfigured()) {
         let query = supabase
           .from('transfers')
           .select('*', { count: 'exact' })
@@ -121,7 +121,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       }
 
       // 2. Fetch from Supabase if online
-      if (isOnline) {
+      if (isOnline && isSupabaseConfigured()) {
         const { data, error } = await supabase
           .from('transfers')
           .select('*')
@@ -141,8 +141,16 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   createTransfer: async (data) => {
     set({ isLoading: true, error: null, successMessage: null })
     const user = useAuthStore.getState().user
+    const currentCompany = useAuthStore.getState().currentCompany
+    const companyId = currentCompany?.id || user?.default_company_id || null
     const isOnline = useSyncStore.getState().isOnline
     
+    if (!companyId) {
+      const errorMsg = 'لا توجد شركة محددة لإنشاء التحويل'
+      set({ error: errorMsg, isLoading: false })
+      return { success: false, error: errorMsg }
+    }
+
     if (data.source_account_id === data.destination_account_id) {
       set({ error: 'لا يمكن التحويل للحساب نفسه', isLoading: false })
       return { success: false, error: 'لا يمكن التحويل للحساب نفسه' }
@@ -150,6 +158,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
 
     // التحقق من الرصيد محلياً
     const sourceAccount = await db.accounts.get(data.source_account_id)
+    const destinationAccount = await db.accounts.get(data.destination_account_id)
     if (sourceAccount && sourceAccount.balance < data.amount) {
       set({ error: 'رصيد غير كافي', isLoading: false })
       return { success: false, error: 'رصيد غير كافي' }
@@ -157,10 +166,15 @@ export const useTransferStore = create<TransferState>((set, get) => ({
 
     const newTransfer = {
       id: uuidv4(),
+      company_id: companyId,
       reference: `TRF-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
       source_account_id: data.source_account_id,
       destination_account_id: data.destination_account_id,
       amount: Math.round(data.amount * 100) / 100,
+      source_currency: sourceAccount?.currency || currentCompany?.default_currency || 'LYD',
+      destination_currency: destinationAccount?.currency || currentCompany?.default_currency || 'LYD',
+      exchange_rate: 1,
+      destination_amount: Math.round(data.amount * 100) / 100,
       description: data.description || null,
       status: 'pending' as TransferStatus,
       created_by: user?.id || null,
@@ -172,7 +186,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       const transferToInsert = { ...newTransfer }
       delete (transferToInsert as any).synced
 
-      if (isOnline) {
+      if (isOnline && isSupabaseConfigured()) {
         const { error } = await supabase
           .from('transfers')
           .insert(transferToInsert)
@@ -225,7 +239,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       // البيانات المطلوبة للـ RPC
       const rpcData = { transfer_id: id, approver_id: user?.id || null }
       
-      if (isOnline && (transfer as any).synced !== false) {
+      if (isOnline && isSupabaseConfigured() && (transfer as any).synced !== false) {
         const { error: trfError } = await supabase.rpc('approve_transfer', rpcData)
 
         if (trfError) {
@@ -248,7 +262,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
         useAccountStore.setState(state => ({
           accounts: state.accounts.map(a => a.id === src.id ? { ...a, balance: src.balance } : a)
         }))
-        if (isOnline) {
+        if (isOnline && isSupabaseConfigured()) {
           const { error } = await supabase.from('accounts').update({ balance: src.balance }).eq('id', src.id)
           if (error) {
             await addToSyncQueue('update', 'accounts', src)
@@ -270,7 +284,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
         useAccountStore.setState(state => ({
           accounts: state.accounts.map(a => a.id === dst.id ? { ...a, balance: dst.balance } : a)
         }))
-        if (isOnline) {
+        if (isOnline && isSupabaseConfigured()) {
           const { error } = await supabase.from('accounts').update({ balance: dst.balance }).eq('id', dst.id)
           if (error) {
             await addToSyncQueue('update', 'accounts', dst)
@@ -310,7 +324,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     try {
       const rejected = { ...transfer, status: 'rejected' as TransferStatus, approved_by: user?.id }
       
-      if (isOnline && (transfer as any).synced !== false) {
+      if (isOnline && isSupabaseConfigured() && (transfer as any).synced !== false) {
         const { error } = await supabase
           .from('transfers')
           .update({ status: 'rejected', approved_by: user?.id || null })
@@ -345,7 +359,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     const transfer = get().transfers.find(t => t.id === id)
     
     try {
-      if (isOnline && transfer && (transfer as any).synced !== false) {
+      if (isOnline && isSupabaseConfigured() && transfer && (transfer as any).synced !== false) {
         const { error } = await supabase.from('transfers').delete().eq('id', id)
         if (error) {
           await addToSyncQueue('delete', 'transfers', { id })

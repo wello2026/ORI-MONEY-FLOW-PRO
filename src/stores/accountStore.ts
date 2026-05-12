@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Account } from '@/types'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { useAuthStore } from './authStore'
 import { generateReference } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid'
@@ -37,22 +37,22 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     set({ isLoading: true, error: null })
     const isOnline = useSyncStore.getState().isOnline
     const user = useAuthStore.getState().user
-    
+
     try {
       // 1. Fetch from Local DB (Dexie) first
       let localData = await db.accounts.orderBy('created_at').reverse().toArray()
-      
+
       // Filter local data for employees
       if (user?.role === 'employee') {
         localData = localData.filter(a => (a as any).owner_id === user.id)
       }
-      
+
       set({ accounts: localData as unknown as Account[], isLoading: false })
 
-      // 2. If online, sync from Supabase
-      if (isOnline) {
+      // 2. If online and Supabase configured, sync from Supabase
+      if (isOnline && isSupabaseConfigured()) {
         let query = supabase.from('accounts').select('*')
-        
+
         // Filter remote data for employees
         if (user?.role === 'employee') {
           query = query.eq('owner_id', user.id)
@@ -60,28 +60,23 @@ export const useAccountStore = create<AccountState>((set, get) => ({
 
         const { data, error } = await query.order('created_at', { ascending: false })
 
-        if (error) {
-          console.error(`خطأ في جلب الحسابات من الخادم: ${error.message}`)
-        } else if (data) {
+        if (!error && data) {
           const allLocalAccounts = await db.accounts.toArray()
           const pendingQueue = await db.sync_queue.filter(q => q.table === 'accounts').toArray()
           const pendingIds = new Set(pendingQueue.map(q => (q.data as any).id))
           const remoteIds = new Set(data.map(a => a.id))
 
-          // 1. Delete dead local rows (rejected by server, not in sync queue)
-          // Only delete rows that belong to the user or if user is admin
           const deadIds = allLocalAccounts
             .filter(a => {
               if (user?.role === 'employee' && (a as any).owner_id !== user.id) return false
               return !remoteIds.has(a.id) && !pendingIds.has(a.id)
             })
             .map(a => a.id)
-          
+
           if (deadIds.length > 0) {
             await db.accounts.bulkDelete(deadIds)
           }
 
-          // 2. Merge remote data
           const mergedData = data.map(remoteAcc => {
             if (pendingIds.has(remoteAcc.id)) {
                return allLocalAccounts.find(a => a.id === remoteAcc.id) || { ...remoteAcc, synced: true }
@@ -90,13 +85,12 @@ export const useAccountStore = create<AccountState>((set, get) => ({
           })
 
           await db.accounts.bulkPut(mergedData as any)
-          
-          // Re-fetch filtered data
+
           let finalLocalData = await db.accounts.orderBy('created_at').reverse().toArray()
           if (user?.role === 'employee') {
             finalLocalData = finalLocalData.filter(a => (a as any).owner_id === user.id)
           }
-          
+
           set({ accounts: finalLocalData as unknown as Account[] })
         }
       }
@@ -107,7 +101,17 @@ export const useAccountStore = create<AccountState>((set, get) => ({
 
   fetchAccount: async (id: string) => {
     set({ isLoading: true, error: null })
-    
+
+    if (!isSupabaseConfigured()) {
+      try {
+        const localData = await db.accounts.get(id)
+        set({ currentAccount: localData as unknown as Account || null, isLoading: false })
+      } catch {
+        set({ isLoading: false })
+      }
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('accounts')
@@ -115,10 +119,11 @@ export const useAccountStore = create<AccountState>((set, get) => ({
         .eq('id', id)
         .single()
 
-      if (error) {
-        throw new Error(`خطأ في جلب الحساب: ${error.message}`)
+      if (!error && data) {
+        set({ currentAccount: data as Account, isLoading: false })
+      } else {
+        set({ currentAccount: null, isLoading: false })
       }
-      set({ currentAccount: data as Account, isLoading: false })
     } catch (err: any) {
       set({ error: err.message || 'حدث خطأ غير معروف', isLoading: false })
     }
@@ -127,6 +132,14 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   createAccount: async (accountData) => {
     set({ isLoading: true, error: null, successMessage: null })
     const user = useAuthStore.getState().user
+    const currentCompany = useAuthStore.getState().currentCompany
+    const companyId = currentCompany?.id || user?.default_company_id || null
+
+    if (!companyId) {
+      const errorMsg = 'لا توجد شركة محددة لإنشاء الحساب'
+      set({ error: errorMsg, isLoading: false })
+      return { success: false, error: errorMsg }
+    }
 
     let validCreatedBy: string | null = null
     if (user?.id) {
@@ -135,13 +148,12 @@ export const useAccountStore = create<AccountState>((set, get) => ({
 
     const newAccount = {
       id: uuidv4(),
+      company_id: companyId,
       code: accountData.code || generateReference('ACC').slice(0, 8),
       name: accountData.name,
       type: accountData.type,
       balance: Math.round((accountData.balance ?? 0) * 100) / 100,
       currency: accountData.currency || 'LYD',
-      parent_id: (accountData as any).parent_id || null,
-      owner_id: (accountData as any).owner_id || null,
       status: accountData.status || 'active',
       notes: accountData.notes || null,
       created_by: validCreatedBy,
@@ -155,25 +167,14 @@ export const useAccountStore = create<AccountState>((set, get) => ({
       const accountToInsert = { ...newAccount }
       delete (accountToInsert as any).synced
 
-      if (isOnline) {
+      if (isOnline && isSupabaseConfigured()) {
         const { error } = await supabase
           .from('accounts')
           .insert(accountToInsert)
 
-        if (error) {
-          if (error.message.includes('duplicate') || error.code === '23505') {
-            const errorMsg = 'كود الحساب مستخدم من قبل، يرجى اختيار كود آخر'
-            set({ error: errorMsg, isLoading: false })
-            return { success: false, error: errorMsg }
-          }
-          await addToSyncQueue('create', 'accounts', accountToInsert)
-          useSyncStore.getState().updatePendingCount()
-        } else {
+        if (!error) {
           newAccount.synced = true
         }
-      } else {
-        await addToSyncQueue('create', 'accounts', accountToInsert)
-        useSyncStore.getState().updatePendingCount()
       }
 
       await db.accounts.put(newAccount as any)
@@ -181,9 +182,9 @@ export const useAccountStore = create<AccountState>((set, get) => ({
       set((state) => ({
         accounts: [newAccount as unknown as Account, ...state.accounts],
         isLoading: false,
-        successMessage: isOnline && newAccount.synced ? 'تم إنشاء الحساب بنجاح' : 'تم حفظ الحساب محلياً وسيتم مزامنته لاحقاً'
+        successMessage: newAccount.synced ? 'تم إنشاء الحساب بنجاح' : 'تم حفظ الحساب محلياً'
       }))
-      
+
       return { success: true }
     } catch (err: any) {
       const errorMsg = err.message || 'حدث خطأ غير معروف أثناء إنشاء الحساب'
@@ -195,6 +196,21 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   updateAccount: async (id: string, updates: Partial<Account>) => {
     set({ isLoading: true, error: null, successMessage: null })
     const updatedData = { ...updates, updated_at: new Date().toISOString() }
+
+    if (!isSupabaseConfigured()) {
+      try {
+        await db.accounts.update(id, updatedData as any)
+        set((state) => ({
+          accounts: state.accounts.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+          isLoading: false,
+          successMessage: 'تم تحديث الحساب محلياً'
+        }))
+        return { success: true }
+      } catch (err: any) {
+        set({ error: err.message, isLoading: false })
+        return { success: false, error: err.message }
+      }
+    }
 
     try {
       const { data, error } = await supabase
@@ -226,7 +242,23 @@ export const useAccountStore = create<AccountState>((set, get) => ({
 
   deleteAccount: async (id: string) => {
     set({ isLoading: true, error: null, successMessage: null })
-    
+
+    if (!isSupabaseConfigured()) {
+      try {
+        await db.accounts.delete(id)
+        set((state) => ({
+          accounts: state.accounts.filter((a) => a.id !== id),
+          currentAccount: state.currentAccount?.id === id ? null : state.currentAccount,
+          isLoading: false,
+          successMessage: 'تم حذف الحساب محلياً'
+        }))
+        return { success: true }
+      } catch (err: any) {
+        set({ error: err.message, isLoading: false })
+        return { success: false, error: err.message }
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('accounts')

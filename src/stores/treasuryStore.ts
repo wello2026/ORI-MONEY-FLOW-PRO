@@ -134,11 +134,16 @@ export const useTreasuryStore = create<TreasuryState>((set, get) => ({
 
     const user = useAuthStore.getState().user
     const currentCompany = useAuthStore.getState().currentCompany
+    if (!currentCompany) {
+      const errorMsg = 'لا توجد شركة محددة'
+      set({ error: errorMsg, isLoading: false })
+      return { success: false, error: errorMsg }
+    }
 
     try {
       const newTreasury = {
         id: uuidv4(),
-        company_id: currentCompany?.id || '',
+        company_id: currentCompany.id,
         treasury_code: data.treasury_code || `TR-${Date.now()}`,
         treasury_name: data.treasury_name,
         treasury_name_ar: data.treasury_name_ar || data.treasury_name,
@@ -264,11 +269,16 @@ export const useTreasuryStore = create<TreasuryState>((set, get) => ({
 
     const user = useAuthStore.getState().user
     const currentCompany = useAuthStore.getState().currentCompany
+    if (!currentCompany) {
+      const errorMsg = 'لا توجد شركة محددة'
+      set({ error: errorMsg, isLoading: false })
+      return { success: false, error: errorMsg }
+    }
 
     try {
       const newTx = {
         id: uuidv4(),
-        company_id: currentCompany?.id,
+        company_id: currentCompany.id,
         treasury_id: data.treasury_id,
         transaction_type: data.transaction_type,
         amount: data.amount,
@@ -419,11 +429,12 @@ export const useTreasuryStore = create<TreasuryState>((set, get) => ({
 
     const user = useAuthStore.getState().user
     const currentCompany = useAuthStore.getState().currentCompany
+    if (!currentCompany) return { success: false, error: 'لا توجد شركة محددة' }
 
     try {
       const { error } = await supabase.from('currency_rates').insert({
         id: uuidv4(),
-        company_id: currentCompany?.id,
+        company_id: currentCompany.id,
         base_currency: baseCurrency,
         target_currency: targetCurrency,
         rate,

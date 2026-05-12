@@ -99,12 +99,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const user = useAuthStore.getState().user
     const currentCompany = useAuthStore.getState().currentCompany
     set({ isLoading: true, error: null })
+    if (!currentCompany) {
+      const errorMsg = 'لا توجد شركة محددة'
+      set({ error: errorMsg, isLoading: false })
+      return { success: false, error: errorMsg }
+    }
 
     try {
       const newProject = {
         ...projectData,
         id: uuidv4(),
-        company_id: currentCompany?.id,
+        company_id: currentCompany.id,
         created_by: user?.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

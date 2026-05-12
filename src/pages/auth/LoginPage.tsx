@@ -32,8 +32,10 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginForm) => {
     try {
-      await login(data.email, data.password)
-      navigate(ROUTES.DASHBOARD)
+      const ok = await login(data.email, data.password)
+      if (ok) {
+        navigate(ROUTES.DASHBOARD)
+      }
     } catch {
       // Error is handled in store
     }

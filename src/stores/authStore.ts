@@ -15,7 +15,7 @@ interface AuthState {
   setCurrentCompany: (company: Company | null) => void
   setUserCompanies: (companies: Company[]) => void
   setCompanyRole: (role: CompanyRole | null) => void
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
   updateProfile: (updates: Partial<User>) => void
   checkAuth: () => Promise<void>
@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
 
         if (!isSupabaseConfigured()) {
           set({ error: 'Supabase غير مُعد. يرجى الاتصال بالمدير.', isLoading: false })
-          return
+          return false
         }
 
         try {
@@ -57,23 +57,36 @@ export const useAuthStore = create<AuthState>()(
 
           if (authError || !authData.user) {
             set({ error: authError?.message || 'بيانات الدخول غير صحيحة', isLoading: false })
-            return
+            return false
           }
 
-          const { data: profile, error: profileError } = await supabase
+          let { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', authData.user.id)
             .single()
 
           if (profileError || !profile) {
-            set({ error: 'لم يتم العثور على ملف شخصي للمستخدم', isLoading: false })
-            return
+            await supabase.rpc('bootstrap_current_user')
+
+            const retry = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', authData.user.id)
+              .single()
+
+            profile = retry.data
+            profileError = retry.error
+          }
+
+          if (profileError || !profile) {
+            set({ error: 'تعذر تجهيز ملف المستخدم تلقائياً. تحقق من تطبيق migration الإنقاذ.', isLoading: false })
+            return false
           }
 
           if (!profile.is_active) {
             set({ error: 'الحساب غير نشط. يرجى التواصل مع المدير.', isLoading: false })
-            return
+            return false
           }
 
           const user: User = {
@@ -90,10 +103,11 @@ export const useAuthStore = create<AuthState>()(
 
           // Load user's companies after successful login
           await get().loadUserCompanies()
-          return
+          return true
         } catch (err) {
           console.error('Login error:', err)
           set({ error: 'حدث خطأ أثناء تسجيل الدخول', isLoading: false })
+          return false
         }
       },
 
@@ -150,8 +164,9 @@ export const useAuthStore = create<AuthState>()(
             }))
             set({ userCompanies: companies })
 
-            const current = companies.find(c => data.find((r: { is_current: boolean }) => r.is_current))
-            const role = data.find((r: { is_current: boolean }) => r.is_current)?.role as CompanyRole | null
+            const currentRow = data.find((r: { is_current: boolean }) => r.is_current) || data[0]
+            const current = companies.find(c => c.id === currentRow.company_id)
+            const role = currentRow?.role as CompanyRole | null
 
             if (current) {
               set({ currentCompany: current, companyRole: role })
@@ -189,11 +204,21 @@ export const useAuthStore = create<AuthState>()(
           const { data: { session } } = await supabase.auth.getSession()
 
           if (session?.user) {
-            const { data: profile } = await supabase
+            let { data: profile } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
               .single()
+
+            if (!profile) {
+              await supabase.rpc('bootstrap_current_user')
+              const retry = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single()
+              profile = retry.data
+            }
 
             if (profile) {
               const user: User = {
@@ -209,18 +234,8 @@ export const useAuthStore = create<AuthState>()(
               set({ user, isAuthenticated: true, isLoading: false })
               await get().loadUserCompanies()
             } else {
-              set({
-                user: {
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  full_name: session.user.user_metadata?.full_name || 'مستخدم',
-                  role: 'employee',
-                  is_active: true,
-                  created_at: new Date().toISOString()
-                },
-                isAuthenticated: true,
-                isLoading: false
-              })
+              await supabase.auth.signOut()
+              set({ user: null, isAuthenticated: false, isLoading: false, error: 'تعذر تجهيز جلسة المستخدم' })
             }
           } else {
             set({ isLoading: false })

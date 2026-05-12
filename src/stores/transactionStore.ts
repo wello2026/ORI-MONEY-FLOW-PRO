@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Transaction, TransactionType, TransactionStatus, TransactionFilter } from '@/types'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { useAuthStore } from './authStore'
 import { generateReference } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid'
@@ -19,6 +19,8 @@ interface TransactionState {
   createTransaction: (data: {
     type: TransactionType
     amount: number
+    currency?: string
+    exchange_rate?: number
     account_id: string
     offset_account_id?: string
     description?: string
@@ -83,8 +85,8 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
         isLoading: false
       })
 
-      // 2. If online, sync from Supabase
-      if (isOnline) {
+      // 2. If online and Supabase configured, sync from Supabase
+      if (isOnline && isSupabaseConfigured()) {
         let query = supabase
           .from('transactions')
           .select('*', { count: 'exact' })
@@ -106,29 +108,25 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
         const { data, count, error } = await query
 
-        if (error) {
-          console.error(`خطأ في جلب المعاملات من الخادم: ${error.message}`)
-        } else if (data) {
+        if (!error && data) {
           const allLocalTransactions = await db.transactions.toArray()
           const pendingQueue = await db.sync_queue.filter(q => q.table === 'transactions').toArray()
           const pendingIds = new Set(pendingQueue.map(q => (q.data as any).id))
           const remoteIds = new Set(data.map(t => t.id))
 
-          // 1. Delete dead local rows (restricted by role)
           const deadIds = allLocalTransactions
             .filter(t => {
               if (currentUser?.role === 'employee' && t.created_by !== currentUser.id) return false
               return !remoteIds.has(t.id) && !pendingIds.has(t.id)
             })
             .map(t => t.id)
-          
+
           if (deadIds.length > 0) {
             await db.transactions.bulkDelete(deadIds)
           }
 
-          // 2. Merge and Update local DB
           await db.transactions.bulkPut(data.map(t => ({ ...t, synced: true })) as any)
-          
+
           set({
             transactions: (data || []) as Transaction[],
             pagination: { page, limit, total: count || 0 }
@@ -174,6 +172,14 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   createTransaction: async (data) => {
     set({ isLoading: true, error: null, successMessage: null })
     const user = useAuthStore.getState().user
+    const currentCompany = useAuthStore.getState().currentCompany
+    const companyId = currentCompany?.id || user?.default_company_id || null
+
+    if (!companyId) {
+      const errorMsg = 'لا توجد شركة محددة لإنشاء المعاملة'
+      set({ error: errorMsg, isLoading: false })
+      return { success: false, error: errorMsg }
+    }
 
     let validCreatedBy: string | null = null
     if (user?.id) {
@@ -184,9 +190,12 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
     const newTransaction = {
       id: uuidv4(),
+      company_id: companyId,
       reference: generateReference('TXN'),
       type: data.type,
       amount: data.amount,
+      currency: data.currency || currentCompany?.default_currency || 'LYD',
+      exchange_rate: data.exchange_rate || 1,
       description: data.description || null,
       account_id: data.account_id,
       offset_account_id: data.offset_account_id || null,
@@ -204,7 +213,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       const transactionToInsert = { ...newTransaction }
       delete (transactionToInsert as any).synced // remove local-only flag for supabase
 
-      if (isOnline) {
+      if (isOnline && isSupabaseConfigured()) {
         const { error } = await supabase
           .from('transactions')
           .insert(transactionToInsert)
@@ -281,32 +290,30 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
         }))
       }
 
-      // 3. المزامنة مع Supabase
-      const rpcData = { tx_id: id, approver_id: user?.id || null }
-      
-      if (isOnline) {
+      // 3. Sync with Supabase
+      const rpcData = { p_transaction_id: id, p_notes: null }
+
+      if (isOnline && isSupabaseConfigured()) {
         const { error: txError } = await supabase.rpc('approve_transaction', rpcData)
 
         if (txError) {
-          console.error('RPC Error, falling back to sync queue:', txError)
           await addToSyncQueue('rpc', 'approve_transaction', rpcData)
         } else {
-          // تأكيد المزامنة محلياً
           await db.transactions.update(id, { synced: true })
           if (account) {
             await db.accounts.update(account.id, { synced: true })
           }
         }
-      } else {
+      } else if (isOnline) {
         await addToSyncQueue('rpc', 'approve_transaction', rpcData)
       }
 
-      // 4. تحديث حالة المتجر الحالية
+      // 4. Update store state
       set((state) => ({
-        transactions: state.transactions.map(t => t.id === id ? { ...approvedTx, synced: isOnline } : t),
-        currentTransaction: state.currentTransaction?.id === id ? { ...approvedTx, synced: isOnline } : state.currentTransaction,
+        transactions: state.transactions.map(t => t.id === id ? { ...approvedTx, synced: isOnline && isSupabaseConfigured() } : t),
+        currentTransaction: state.currentTransaction?.id === id ? { ...approvedTx, synced: isOnline && isSupabaseConfigured() } : state.currentTransaction,
         isLoading: false,
-        successMessage: isOnline ? 'تمت الموافقة على المعاملة بنجاح' : 'تمت الموافقة محلياً وسيتم المزامنة عند الاتصال'
+        successMessage: 'تمت الموافقة محلياً'
       }))
 
       return { success: true }
@@ -320,24 +327,28 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   rejectTransaction: async (id) => {
     const transaction = get().transactions.find(t => t.id === id)
     if (!transaction) {
-      return { success: false, error: 'الماملة غير موجودة' }
+      return { success: false, error: 'المعاملة غير موجودة' }
     }
 
     set({ isLoading: true, error: null, successMessage: null })
     const user = useAuthStore.getState().user
 
     try {
-      const { error } = await supabase
-        .from('transactions')
-        .update({ 
-          status: 'rejected' as TransactionStatus,
-          approved_by: user?.id || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase
+          .from('transactions')
+          .update({
+            status: 'rejected' as TransactionStatus,
+            approved_by: user?.id || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id)
 
-      if (error) {
-        throw new Error(`خطأ في الرفض: ${error.message}`)
+        if (error) {
+          await db.transactions.update(id, { status: 'rejected' } as any)
+        }
+      } else {
+        await db.transactions.update(id, { status: 'rejected' } as any)
       }
 
       const rejectedTx = { ...transaction, status: 'rejected' as TransactionStatus }
@@ -345,7 +356,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
         transactions: state.transactions.map(t => t.id === id ? rejectedTx : t),
         currentTransaction: state.currentTransaction?.id === id ? rejectedTx : state.currentTransaction,
         isLoading: false,
-        successMessage: 'تم رفض المعاملة بنجاح'
+        successMessage: 'تم رفض المعاملة'
       }))
       return { success: true }
     } catch (err: any) {
@@ -360,30 +371,36 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     const updatedData = { ...updates, updated_at: new Date().toISOString() }
 
     try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .update(updatedData)
-        .eq('id', id)
-        .select()
-        .single()
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase
+          .from('transactions')
+          .update(updatedData)
+          .eq('id', id)
+          .select()
+          .single()
 
-      if (error) {
-        const errorMsg = `خطأ في تحديث المعاملة: ${error.message}`
-        set({ error: errorMsg, isLoading: false })
-        return { success: false, error: errorMsg }
+        if (!error && data) {
+          set((state) => ({
+            transactions: state.transactions.map((t) => (t.id === id ? data as Transaction : t)),
+            currentTransaction: state.currentTransaction?.id === id ? data as Transaction : state.currentTransaction,
+            isLoading: false,
+            successMessage: 'تم تحديث المعاملة بنجاح'
+          }))
+          return { success: true }
+        }
       }
 
+      await db.transactions.update(id, updatedData as any)
       set((state) => ({
-        transactions: state.transactions.map((t) => (t.id === id ? data as Transaction : t)),
-        currentTransaction: state.currentTransaction?.id === id ? data as Transaction : state.currentTransaction,
+        transactions: state.transactions.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        currentTransaction: state.currentTransaction?.id === id ? { ...state.currentTransaction, ...updates } : state.currentTransaction,
         isLoading: false,
-        successMessage: 'تم تحديث المعاملة بنجاح'
+        successMessage: 'تم تحديث المعاملة محلياً'
       }))
       return { success: true }
     } catch (err: any) {
-      const errorMsg = err.message || 'حدث خطأ غير معروف'
-      set({ error: errorMsg, isLoading: false })
-      return { success: false, error: errorMsg }
+      set({ error: err.message || 'خطأ', isLoading: false })
+      return { success: false, error: err.message }
     }
   },
 
@@ -391,17 +408,14 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     set({ isLoading: true, error: null, successMessage: null })
 
     try {
-      const { error } = await supabase
-        .from('transactions')
-        .delete()
-        .eq('id', id)
-
-      if (error) {
-        const errorMsg = error.message.includes('foreign key')
-          ? 'لا يمكن حذف هذه المعاملة لأنها مرتبطة ببيانات أخرى'
-          : `خطأ في حذف المعاملة: ${error.message}`
-        set({ error: errorMsg, isLoading: false })
-        return { success: false, error: errorMsg }
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase.from('transactions').delete().eq('id', id)
+        if (error) {
+          set({ error: error.message, isLoading: false })
+          return { success: false, error: error.message }
+        }
+      } else {
+        await db.transactions.delete(id)
       }
 
       set((state) => ({
@@ -412,9 +426,8 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       }))
       return { success: true }
     } catch (err: any) {
-      const errorMsg = err.message || 'حدث خطأ غير معروف'
-      set({ error: errorMsg, isLoading: false })
-      return { success: false, error: errorMsg }
+      set({ error: err.message || 'خطأ', isLoading: false })
+      return { success: false, error: err.message }
     }
   },
 

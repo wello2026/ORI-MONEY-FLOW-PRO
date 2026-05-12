@@ -3,14 +3,18 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import * as webpush from "npm:web-push@3.6.7"
 
-const VAPID_PUBLIC_KEY = "BKJccS-o4FBHCZdizTp7pLx7bje1ATyH8HEmOz6IADkQwzOgVsp41m3AEjmoJSeW8zgFrvrFJkitNKyA5m_F0mc";
-const VAPID_PRIVATE_KEY = "sGjOMcwQkXOokXIfMOdT7NFDldAch9GQnnt5DOQiXnU";
-const VAPID_EMAIL = "mailto:admin@example.com";
+const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
+const VAPID_EMAIL = Deno.env.get("VAPID_EMAIL") ?? "mailto:admin@example.com";
 
 webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 serve(async (req) => {
   try {
+    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+      throw new Error("Missing VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY");
+    }
+
     const { record } = await req.json();
     
     // Create Supabase Client
@@ -27,7 +31,7 @@ serve(async (req) => {
 
     if (error) throw error;
 
-    const pushPromises = subscriptions.map((sub: any) => {
+    const pushPromises = (subscriptions || []).map((sub: any) => {
       const payload = JSON.stringify({
         title: record.title,
         body: record.body,

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Plus, Search, User, Shield, Mail, Phone, Calendar, Edit2, Trash2, Key, X } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { ROLES } from '@/lib/constants'
+import { useAuthStore } from '@/stores/authStore'
 
 export default function UsersPage() {
+  const currentCompany = useAuthStore((state) => state.currentCompany)
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -12,7 +15,8 @@ export default function UsersPage() {
     full_name: '',
     email: '',
     phone: '',
-    role: 'employee'
+    role: 'employee',
+    password: ''
   })
 
   useEffect(() => {
@@ -38,20 +42,36 @@ export default function UsersPage() {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      // In a production app, this would call an Edge Function to create Auth user
-      // For now, we simulate by adding to profiles
-      const { error } = await supabase
-        .from('profiles')
-        .insert([{
-          ...formData,
-          id: crypto.randomUUID(), // Simulated ID
-          created_at: new Date().toISOString()
-        }])
+      const authClient = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          }
+        }
+      )
+
+      const { error } = await authClient.auth.signUp({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.full_name,
+            phone: formData.phone,
+            role: formData.role,
+            company_role: formData.role === 'admin' ? 'admin' : 'viewer',
+            company_id: currentCompany?.id
+          }
+        }
+      })
 
       if (error) throw error
       
       setIsModalOpen(false)
-      setFormData({ full_name: '', email: '', phone: '', role: 'employee' })
+      setFormData({ full_name: '', email: '', phone: '', role: 'employee', password: '' })
       fetchUsers()
     } catch (err: any) {
       alert('Error: ' + err.message)
@@ -191,6 +211,19 @@ export default function UsersPage() {
                   onChange={e => setFormData({...formData, email: e.target.value})}
                   className="w-full bg-muted/50 border-2 border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold"
                   placeholder="name@example.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-black text-muted-foreground">كلمة المرور المؤقتة</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={formData.password}
+                  onChange={e => setFormData({...formData, password: e.target.value})}
+                  className="w-full bg-muted/50 border-2 border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                  placeholder="6 أحرف على الأقل"
                 />
               </div>
 

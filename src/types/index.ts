@@ -117,6 +117,7 @@ export type AccountStatus = 'active' | 'inactive' | 'archived'
 
 export interface Account {
   id: string
+  company_id?: string
   code: string
   name: string
   type: AccountType
@@ -137,6 +138,7 @@ export type TransactionStatus = 'pending' | 'approved' | 'rejected' | 'completed
 
 export interface Transaction {
   id: string
+  company_id?: string
   reference: string
   type: TransactionType
   amount: number
@@ -163,6 +165,7 @@ export type TransferStatus = 'pending' | 'approved' | 'rejected' | 'completed'
 
 export interface Transfer {
   id: string
+  company_id?: string
   reference: string
   source_account_id: string
   destination_account_id: string

@@ -10,6 +10,7 @@ interface EmployeeFormData {
   email: string
   phone: string
   role: 'super_admin' | 'admin' | 'employee' | 'viewer'
+  password?: string
 }
 
 export default function EmployeeFormPage() {
@@ -60,7 +61,7 @@ export default function EmployeeFormPage() {
       createEmployee({
         ...data,
         is_active: true
-      })
+      } as any)
     }
     navigate('/employees')
   }
@@ -115,6 +116,25 @@ export default function EmployeeFormPage() {
                 <p className="mt-1 text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
+
+            {!isEdit && (
+              <div>
+                <label className="block text-sm font-medium mb-2">كلمة المرور المؤقتة</label>
+                <input
+                  type="password"
+                  {...register('password', {
+                    required: 'كلمة المرور مطلوبة',
+                    minLength: { value: 6, message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }
+                  })}
+                  className="input-field"
+                  placeholder="6 أحرف على الأقل"
+                  dir="ltr"
+                />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-destructive">{errors.password.message}</p>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium mb-2">رقم الهاتف</label>

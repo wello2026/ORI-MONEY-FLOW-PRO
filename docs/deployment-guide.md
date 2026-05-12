@@ -1,13 +1,13 @@
 # Deployment Guide — ORI Financial Operations ERP
 
-**Date:** 2026-05-10
-**Version:** 1.0
+**Date:** 2026-05-12
+**Version:** 2.0 Rescue Baseline
 
 ---
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - Supabase account with a project
 - Cloudflare account (free tier sufficient)
 - Domain name (optional, for custom domain)
@@ -21,7 +21,7 @@
 2. Note your project URL and anon key from Project Settings → API
 3. Set up a database password (used for Supabase CLI and migrations)
 
-### 1.2 Apply Migrations
+### 1.2 Apply the Rescue Baseline Migration
 ```bash
 # Install Supabase CLI
 npm install -g supabase
@@ -36,7 +36,9 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase db push
 ```
 
-Or apply manually via Supabase SQL Editor: run each `.sql` file in `supabase/migrations/` in numerical order.
+The canonical migration is `supabase/migrations/20260512170000_ori_rescue_baseline.sql`. It creates the full schema, RLS policies, triggers, RPC functions, default company, starter accounts/treasuries, and auth-user bootstrap.
+
+For an existing Supabase project that already has broken old migrations recorded, `db push` may complain about remote migration history. In that case, open Supabase SQL Editor and run the single canonical migration file once against a staging copy first, then production. Do not re-add the deleted legacy migrations.
 
 ### 1.3 Verify Tables
 After migrations, verify these tables exist:
@@ -69,26 +71,8 @@ In Supabase Dashboard → Database → Replication, enable replication for:
    - `VAPID_PRIVATE_KEY` = your VAPID private key
    - `VAPID_EMAIL` = mailto:your@email.com
 
-### 1.6 Create Initial User
-1. Go to Supabase Dashboard → Authentication → Users
-2. Click "Add User" → enter email + password
-3. Copy the user's UUID
-
-### 1.7 Create Company + Link User
-```sql
--- Create company
-INSERT INTO companies (id, company_name, company_name_ar, country, default_currency)
-VALUES ('<company-uuid>', 'My Company', ' شركتي', 'LY', 'LYD');
-
--- Link user to company as owner
-INSERT INTO user_companies (user_id, company_id, role, is_current)
-VALUES ('<user-uuid>', '<company-uuid>', 'owner', true);
-
--- Create profile for user (if not auto-created)
-INSERT INTO profiles (id, email, full_name, role, is_active)
-VALUES ('<user-uuid>', 'user@company.com', 'Admin User', 'admin', true)
-ON CONFLICT (id) DO NOTHING;
-```
+### 1.6 Create the Initial User
+Create the first user from Supabase Dashboard → Authentication → Users, or through the app sign-up flow if enabled. The rescue migration automatically creates the profile, links the user to the starter company, and makes the first user an owner/admin. No manual `profiles` or `user_companies` SQL is required.
 
 ---
 
@@ -125,7 +109,7 @@ VITE_APPROVAL_THRESHOLD_MEDIUM=5000
 ```bash
 npm run dev
 ```
-App runs at http://localhost:3000
+App runs at http://localhost:5173
 
 ### 2.4 Generate VAPID Keys
 ```bash
@@ -233,4 +217,4 @@ Every push to `main` triggers an automatic deployment. Or manually trigger from 
 
 ---
 
-*Last updated: 2026-05-10*
+*Last updated: 2026-05-12*

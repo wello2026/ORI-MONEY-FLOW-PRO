@@ -192,10 +192,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
     const user = useAuthStore.getState().user
     const currentCompany = useAuthStore.getState().currentCompany
     set({ isLoading: true, error: null })
+    if (!currentCompany) {
+      const errorMsg = 'لا توجد شركة محددة'
+      set({ error: errorMsg, isLoading: false })
+      return { success: false, error: errorMsg }
+    }
+
     try {
       const { error } = await supabase.from('product_cost_components').insert({
         id: uuidv4(),
-        company_id: currentCompany?.id,
+        company_id: currentCompany.id,
         cost_card_id: data.cost_card_id,
         component_type: data.component_type,
         component_name: data.component_name,

@@ -111,7 +111,11 @@ export const usePartnerStore = create<PartnerState>((set, get) => ({
     const user = useAuthStore.getState().user
     const currentCompany = useAuthStore.getState().currentCompany
 
-    if (!currentCompany) return { success: false, error: 'لا توجد شركة محددة' }
+    if (!currentCompany) {
+      const errorMsg = 'لا توجد شركة محددة'
+      set({ error: errorMsg, isLoading: false })
+      return { success: false, error: errorMsg }
+    }
 
     try {
       const partnerId = uuidv4()

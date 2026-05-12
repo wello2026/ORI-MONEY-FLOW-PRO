@@ -28,6 +28,9 @@ dist-ssr
 .env.*
 !.env.example
 
+# Supabase local/project cache
+supabase/.temp/
+
 # AI / Assistant files
 .claude/
 .gemini/
@@ -41,4 +44,3 @@ node_modules
 dist
 .vscode
 .idea
-
