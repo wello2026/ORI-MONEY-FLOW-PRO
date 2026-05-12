@@ -112,21 +112,25 @@ export interface CurrencyRate {
   created_at: string
 }
 
-export type AccountType = 'cashbox' | 'bank' | 'expense' | 'income' | 'employee' | 'temporary'
+export type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
 export type AccountStatus = 'active' | 'inactive' | 'archived'
 
 export interface Account {
   id: string
+  company_id?: string
+  owner_id?: string
   code: string
   name: string
+  name_ar?: string
   type: AccountType
+  parent_id?: string
   balance: number
   currency: string
-  parent_id?: string
-  owner_id?: string
   status: AccountStatus
+  is_active: boolean
+  allow_negative: boolean
   notes?: string
-  created_by: string
+  created_by?: string
   created_at: string
   updated_at: string
   children?: Account[]
@@ -137,26 +141,21 @@ export type TransactionStatus = 'pending' | 'approved' | 'rejected' | 'completed
 
 export interface Transaction {
   id: string
-  reference: string
+  company_id?: string
+  account_id: string
   type: TransactionType
   amount: number
   currency?: string
   exchange_rate?: number
   description?: string
-  account_id: string
-  project_id?: string
-  offset_account_id?: string
-  created_by: string
-  approved_by?: string
+  reference_number?: string
+  transaction_date?: string
   status: TransactionStatus
-  attachments?: string[] // URLs to images
-  metadata?: Record<string, unknown>
+  approved_by?: string
+  approved_at?: string
+  created_by: string
   created_at: string
-  updated_at: string
-  account?: Account
-  offset_account?: Account
-  creator?: User
-  approver?: User
+  updated_at?: string
 }
 
 export type TransferStatus = 'pending' | 'approved' | 'rejected' | 'completed'
